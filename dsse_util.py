@@ -28,7 +28,7 @@ def xor(s1,s2):
     return tostr(''.join(str(int(c1)^int(c2)) for c1,c2 in zip(s1b,s2b)))
 
 def bytes_XOR(b1: bytes, b2: bytes):
-    return (int.from_bytes(b1, 'little')^int.from_bytes(b2, 'little')).to_bytes()
+    return (int.from_bytes(b1, 'little')^int.from_bytes(b2, 'little')).to_bytes(32, 'little')
 
 def mul_inv(a, b):
     if(gcd(a,b)>1):

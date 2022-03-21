@@ -6,7 +6,6 @@ class mitra_client:
     def __init__(self,socket_conn):
         self.sk = None
         self.st = None
-        self.UpdateCnt = None
         self.socket_conn = socket_conn
     
     #MITRA conj. Setup(λ)
@@ -20,23 +19,24 @@ class mitra_client:
         # 4. Set EDB = TSet
         EDB = Tset
         # 5. Send EDB to the server
-        self.socket_conn.send(pickle.dumps((EDB,)))
+        self.socket_conn.send(pickle.dumps((0,EDB)))
     
     def Update(self,op,id_w_tuple):
         id,w = id_w_tuple
         # 1. Parse sk = KT and st = UpdateCnt
         #already saved in object state
         # 2. If UpdateCnt[w] is NULL then set UpdateCnt[w] = 0
-        if(self.UpdateCnt[w]==None):
-            self.UpdateCnt[w]=0
+        if(not w in self.st):
+            self.st[w]=0
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
-        self.UpdateCnt[w]+=1
+        self.st[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
-        addr = dsse_util.prf_F(self.sk,(w+str(self.UpdateCnt[w])+str(0)))
+        addr = dsse_util.prf_F(self.sk,(str(w)+str(self.st[w])+str(0)).encode())
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
-        val = dsse_util.bytes_XOR((str(id)+op).encode(),addr)
+        val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(self.sk,(str(w)+str(self.st[w])+str(1)).encode()))
         # 6. Send (addr, val) to the server
-        return (addr,val)
+        self.socket_conn.send(pickle.dumps((1,addr,val)))
+        print(addr,val)
     
     def Search(self,q):
         n=len(q)
@@ -84,5 +84,6 @@ if __name__ == "__main__":
     client_obj = mitra_client(s)
     client_obj.Setup(100)
     print(client_obj.sk,client_obj.st)
-    
+    client_obj.Update('update',(1,"apple"))
+    s.close()
     

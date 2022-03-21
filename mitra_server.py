@@ -4,8 +4,17 @@ import random, socket
 from constants import HOST,PORT
 
 class mitra_server:
-    def __init__(self) -> None:
+    def __init__(self, socket_tup) -> None:
         self.EDB = None
+        self.conn,self.sock_addr = socket_tup
+
+    def Run(self):
+        # while(True):#not very safe
+        resp_tup = pickle.loads(self.conn.recv(4096))
+        if(resp_tup[0]==0):#for setup
+            self.Setup(resp_tup[1])
+        elif(resp_tup[0]==1):
+            self.Update((resp_tup[1],resp_tup[2]))
     #should recieve by socket, but can be called as direct function in client side, 
     #since server object can exist client side.
     #not ideal, but a workaround to actual implementation     
@@ -32,15 +41,16 @@ class mitra_server:
 
 
 if __name__=="__main__":
-    server_obj = mitra_server()
+    
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen(1)
 
     conn, addr = s.accept()
     print('Connected by', addr)
-    edb_recv, = pickle.loads(conn.recv(4096))
-
-    server_obj.Setup(edb_recv)
+    server_obj = mitra_server((conn,addr))
+    server_obj.Run()
     print("new edb recieved from server: ",server_obj.EDB)
+    server_obj.Run()
+    print(server_obj.EDB)
     conn.close()

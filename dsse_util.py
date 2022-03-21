@@ -14,13 +14,8 @@ def ENC(sk,x):
 
 def DEC(K,c):
     random.seed(K)
-<<<<<<< HEAD:helper.py
     hashstring = random.sample(alphabet,len(c))
     return xor(hashstring,c)
-=======
-    hashed = random.randint(KEYSIZE,KEYSIZE*10-1)
-    return hashed ^ c
->>>>>>> e845ac82bd4e551ad362858bccfbfea0d9feb9e3:dsse_util.py
 
 def tobinary(s):
     return ''.join('0'*(8-len(fm:=format(ord(x), 'b')))+fm for x in s)

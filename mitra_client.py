@@ -45,7 +45,7 @@ class client:
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.st[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
-        addr = dsse_util.prf_F(Kt,w)
+        addr = dsse_util.ENC(self.sk,w)
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
         val = dsse_util.xor(id,addr)
         # 6. Send (addr, val) to the server

@@ -15,7 +15,6 @@ def DEC(K,c):
     hashed = random.randint(KEYSIZE,KEYSIZE*10-1)
     return hashed ^ c
 
-
 def tobinary(s):
     return ''.join('0'*(8-len(fm:=format(ord(x), 'b')))+fm for x in s)
 def tostr(c):

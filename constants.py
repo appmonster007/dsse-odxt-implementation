@@ -1,1 +1,2 @@
 KEYSIZE = 10**8
+MAXBITS = 256

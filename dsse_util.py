@@ -1,7 +1,8 @@
-import random, hashlib
+import random, hashlib, string
 from math import sqrt
 from constants import KEYSIZE, MAXBITS
 
+alphabet = string.ascii_letters + string.digits
 #SKE helper functions:
 def GEN(λ):
     random.seed(λ)
@@ -9,12 +10,13 @@ def GEN(λ):
 #random module's probablistic algorithm is relied on for enc and dec
 def ENC(sk,x):
     random.seed(sk)
-    hashed = random.randint(KEYSIZE,KEYSIZE*10-1)
-    return hashed ^ x
+    hashstring = random.sample(alphabet,len(x))
+    return xor(hashstring,x)
+
 def DEC(K,c):
     random.seed(K)
-    hashed = random.randint(KEYSIZE,KEYSIZE*10-1)
-    return hashed ^ c
+    hashstring = random.sample(alphabet,len(c))
+    return xor(hashstring,c)
 
 def tobinary(s):
     return ''.join('0'*(8-len(fm:=format(ord(x), 'b')))+fm for x in s)

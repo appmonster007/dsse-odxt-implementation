@@ -1,3 +1,8 @@
+from http import server
+import pickle
+import random, socket
+from constants import HOST,PORT
+
 class mitra_server:
     def __init__(self) -> None:
         self.EDB = None
@@ -24,3 +29,18 @@ class mitra_server:
         # 5. Send EOpList1; : : : ; EOpListn to the client
         return EOpLists
     
+
+
+if __name__=="__main__":
+    server_obj = mitra_server()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(1)
+
+    conn, addr = s.accept()
+    print('Connected by', addr)
+    edb_recv, = pickle.loads(conn.recv(4096))
+
+    server_obj.Setup(edb_recv)
+    print("new edb recieved from server: ",server_obj.EDB)
+    conn.close()

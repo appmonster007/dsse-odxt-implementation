@@ -1,22 +1,23 @@
-import dsse_util, pickle
+import dsse_util, pickle, socket
 from Crypto.Util import number
+from constants import HOST,PORT
 
-class client:
-    def __init__(self):
+class odxt_client:
+    def __init__(self, socket_conn):
         self.sk = None
         self.st = None
         self.p = None
         self.g = None
+        self.conn = socket_conn
         # self.UpdateCnt = None
     
     # ODXT Setup(λ)
-    def Setup(self, λ, server):
+    def Setup(self, λ):
         # 0. Set prime p and cyclic group generator g
-        p = number.getPrime(256)
-        while((g:=dsse_util.findPrimitive(p))==-1):
-            p = number.getPrime(256)
-        self.p = p
-        self.g = g
+        # self.p = number.getPrime(16)
+        # self.g = dsse_util.findPrimitive(self.p)
+        self.p = 14466107790023157743
+        self.g = 2
         # 1. Sample a uniformly random key KT for PRF F
         # Kt = dsse_util.GEN(λ)
         Kt = dsse_util.gen_key_F(λ)
@@ -31,16 +32,15 @@ class client:
         # 5. Set EDB = TSet
         EDB = (Tset, XSet)
         # 6. Send EDB to the server
-        # server.send(EDB)
-        return EDB #change this to a socket send
+        self.conn.send(pickle.dumps((0,EDB)))
     
-    def Update(self, op: str, id_w_tuple, server):
+    def Update(self, op: str, id_w_tuple):
         id,w = id_w_tuple
         Kt, Kx, Ky, Kz = self.sk
         # 1. Parse sk = KT and st = UpdateCnt
         #already saved in object state
         # 2. If UpdateCnt[w] is NULL then set UpdateCnt[w] = 0
-        if(self.st[w]==None):
+        if(not w in self.st):
             self.st[w]=0
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.st[w]+=1
@@ -49,13 +49,16 @@ class client:
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
         val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(Kt,(str(w)+str(self.st[w])+str(1)).encode()))
         # 6. Send (addr, val) to the server
-        A = int.from_bytes(dsse_util.prf_Fp(Ky,(str(id)+str(op)).encode()), 'little')
-        B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w)+str(self.st[w])).encode()), 'little')
+        A = int.from_bytes(dsse_util.prf_Fp(Ky,(str(id)+str(op)).encode(), self.p), 'little')
+        B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w)+str(self.st[w])).encode(), self.p), 'little')
+        print(B)
         B_inv = dsse_util.mul_inv(B, self.p-1)
-        C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode()), 'little')
+        C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode(), self.p), 'little')
+
         alpha = A*B_inv
         xtag = pow(self.g, C*A, self.p)
-        return (addr,val, alpha, xtag)
+        self.conn.send(pickle.dumps((addr,val, alpha, xtag)))
+        print()
     
     def Search(self,q):
         n=len(q)
@@ -93,3 +96,14 @@ class client:
                     IdLists[i] = IdLists[i]/id #unsure if this is correct
         # 4. Output IdList = \n i=1IdListi
         return list(set.intersection(*IdLists))
+
+
+if __name__ == "__main__":
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
+    client_obj = odxt_client(s)
+    client_obj.Setup(100)
+    print(client_obj.sk,client_obj.st)
+    client_obj.Update('update',(1,"apple"))
+    s.close()
+    

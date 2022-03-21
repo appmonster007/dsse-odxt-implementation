@@ -32,11 +32,11 @@ def bytes_XOR(b1: bytes, b2: bytes):
 
 def mul_inv(a, b):
     if(gcd(a,b)>1):
-        return None
+        a = a%b
     b0 = b
     x0, x1 = 0, 1
     if b == 1: return 1
-    while a > 1:
+    while a > 1 and b!=0:
         q = a // b
         a, b = b, a%b
         x0, x1 = x1 - q * x0, x0

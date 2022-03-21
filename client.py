@@ -1,4 +1,4 @@
-import dsse_util
+import dsse_util, pickle
 from Crypto.Util import number
 
 class client:
@@ -34,7 +34,7 @@ class client:
         # server.send(EDB)
         return EDB #change this to a socket send
     
-    def Update(self, op, id_w_tuple, server):
+    def Update(self, op: str, id_w_tuple, server):
         id,w = id_w_tuple
         Kt, Kx, Ky, Kz = self.sk
         # 1. Parse sk = KT and st = UpdateCnt
@@ -45,11 +45,17 @@ class client:
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.st[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
-        addr = dsse_util.prf_F(Kt,w)
+        addr = dsse_util.prf_F(Kt,(w+str(self.st[w])+str(0)).encode())
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
-        val = dsse_util.xor(id,addr)
+        val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(Kt,(str(w)+str(self.st[w])+str(1)).encode()))
         # 6. Send (addr, val) to the server
-        return (addr,val)
+        A = int.from_bytes(dsse_util.prf_Fp(Ky,(str(id)+str(op)).encode()), 'little')
+        B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w)+str(self.st[w])).encode()), 'little')
+        B_inv = dsse_util.mul_inv(B, self.p-1)
+        C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode()), 'little')
+        alpha = A*B_inv
+        xtag = pow(self.g, C*A, self.p)
+        return (addr,val, alpha, xtag)
     
     def Search(self,q):
         n=len(q)

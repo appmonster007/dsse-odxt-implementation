@@ -1,5 +1,5 @@
 import random
-import helper
+import dsse_util
 
 
 class client:
@@ -11,7 +11,7 @@ class client:
     #MITRA conj. Setup(λ)
     def Setup(self,λ):
         # 1. Sample a uniformly random key KT for PRF F
-        KT = helper.GEN(λ)
+        KT = dsse_util.GEN(λ)
         # 2. Initialize UpdateCnt; TSet to empty maps
         UpdateCnt, Tset = set(),set()
         # 3. Set sk = KT and st = UpdateCnt
@@ -31,9 +31,9 @@ class client:
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.UpdateCnt[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
-        addr = helper.ENC(self.sk,w)
+        addr = dsse_util.ENC(self.sk,w)
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
-        val = helper.xor(id,addr)
+        val = dsse_util.xor(id,addr)
         # 6. Send (addr, val) to the server
         return (addr,val)
     
@@ -47,7 +47,7 @@ class client:
             # (a) For j = 1 to UpdateCnt[wi]:
             for j in range(self.UpdateCnt[wi]):
                 # i. Set addri;j = F(KT ;wijjjjj0)
-                addr = helper.ENC(self.sk,wi)
+                addr = dsse_util.ENC(self.sk,wi)
                 # ii. Set tokenListi = tokenListi [ faddri;jg
                 tokenlists[i].append(addr)
         # 5. Send tokenList1; : : : ; tokenListn to the server
@@ -64,7 +64,7 @@ class client:
         for i in range(n):
             # (a) For j = 1 to UpdateCnt[wi]:
             for j in range(self.UpdateCnt):
-                id,op = helper.xor(EOpLists[j],helper.ENC(q[i]))
+                id,op = dsse_util.xor(EOpLists[j],dsse_util.ENC(q[i]))
                 # ii. If opi;j is add then set IdListi = IdListi [ fidi;jg
                 if(op=='add'):
                     IdLists[i].append(id)

@@ -1,49 +1,35 @@
+import random
 import dsse_util
-from Crypto.Util import number
+
 
 class client:
     def __init__(self):
         self.sk = None
         self.st = None
-        self.p = None
-        self.g = None
-        # self.UpdateCnt = None
+        self.UpdateCnt = None
     
-    # ODXT Setup(λ)
-    def Setup(self, λ, server):
-        # 0. Set prime p and cyclic group generator g
-        p = number.getPrime(256)
-        while((g:=dsse_util.findPrimitive(p))==-1):
-            p = number.getPrime(256)
-        self.p = p
-        self.g = g
+    #MITRA conj. Setup(λ)
+    def Setup(self,λ):
         # 1. Sample a uniformly random key KT for PRF F
-        # Kt = dsse_util.GEN(λ)
-        Kt = dsse_util.gen_key_F(λ)
-        # 2. Sample uniformly random keys Kx, Ky, Kz for PRF Fp
-        Kx = dsse_util.gen_key_F(λ)
-        Ky = dsse_util.gen_key_F(λ)
-        Kz = dsse_util.gen_key_F(λ)
-        # 3. Initialize UpdateCnt; TSet to empty maps
-        UpdateCnt, Tset, XSet = dict(),dict(), dict()
-        # 4. Set sk = (Kt, Kx, Ky, Kz) and st = UpdateCnt
-        self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
-        # 5. Set EDB = TSet
-        EDB = (Tset, XSet)
-        # 6. Send EDB to the server
-        # server.send(EDB)
+        KT = dsse_util.GEN(λ)
+        # 2. Initialize UpdateCnt; TSet to empty maps
+        UpdateCnt, Tset = set(),set()
+        # 3. Set sk = KT and st = UpdateCnt
+        self.sk,self.st = KT, UpdateCnt
+        # 4. Set EDB = TSet
+        EDB = Tset
+        # 5. Send EDB to the server
         return EDB #change this to a socket send
     
-    def Update(self, op, id_w_tuple, server):
+    def Update(self,op,id_w_tuple):
         id,w = id_w_tuple
-        Kt, Kx, Ky, Kz = self.sk
         # 1. Parse sk = KT and st = UpdateCnt
         #already saved in object state
         # 2. If UpdateCnt[w] is NULL then set UpdateCnt[w] = 0
-        if(self.st[w]==None):
-            self.st[w]=0
+        if(self.UpdateCnt[w]==None):
+            self.UpdateCnt[w]=0
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
-        self.st[w]+=1
+        self.UpdateCnt[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
         addr = dsse_util.ENC(self.sk,w)
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)

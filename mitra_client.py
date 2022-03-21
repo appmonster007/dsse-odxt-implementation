@@ -2,7 +2,7 @@ import random
 import dsse_util
 
 
-class client:
+class mitra_client:
     def __init__(self):
         self.sk = None
         self.st = None

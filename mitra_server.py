@@ -1,4 +1,4 @@
-class Server:
+class mitra_server:
     def __init__(self) -> None:
         self.EDB = None
     #should recieve by socket, but can be called as direct function in client side, 

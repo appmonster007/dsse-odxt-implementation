@@ -1,4 +1,4 @@
-import random, socket, pickle
+import random, socket, pickle, sys
 import dsse_util
 from constants import HOST,PORT
 
@@ -35,7 +35,7 @@ class mitra_client:
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
         val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(self.sk,(str(w)+str(self.st[w])+str(1)).encode()))
         # 6. Send (addr, val) to the server
-        self.socket_conn.send(pickle.dumps((1,addr,val)))
+        self.socket_conn.send(pickle.dumps((1,(addr,val))))
         print(addr,val)
     
     def Search(self,q):
@@ -77,8 +77,8 @@ class mitra_client:
 
 
 if __name__ == "__main__":
-    HOST = 'localhost'
-    PORT = 50007
+    HOST = sys.argv[1]
+    PORT = int(sys.argv[2])
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((HOST, PORT))
     client_obj = mitra_client(s)

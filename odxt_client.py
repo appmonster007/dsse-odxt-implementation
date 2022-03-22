@@ -1,4 +1,4 @@
-import dsse_util, pickle, socket
+import dsse_util, pickle, socket, sys
 from Crypto.Util import number
 from constants import HOST,PORT
 
@@ -26,7 +26,7 @@ class odxt_client:
         Ky = dsse_util.gen_key_F(λ)
         Kz = dsse_util.gen_key_F(λ)
         # 3. Initialize UpdateCnt; TSet to empty maps
-        UpdateCnt, Tset, XSet = dict(),dict(), dict()
+        UpdateCnt, Tset, XSet = dict(),dict(), set()
         # 4. Set sk = (Kt, Kx, Ky, Kz) and st = UpdateCnt
         self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
         # 5. Set EDB = TSet
@@ -45,19 +45,20 @@ class odxt_client:
         # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.st[w]+=1
         # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
-        addr = dsse_util.prf_F(Kt,(w+str(self.st[w])+str(0)).encode())
+        w_wc = str(w)+str(self.st[w])
+        addr = dsse_util.prf_F(Kt,(w_wc+str(0)).encode())
         # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
-        val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(Kt,(str(w)+str(self.st[w])+str(1)).encode()))
+        b1 = (str(id)+str(op)).encode()
+        b2 = dsse_util.prf_F(Kt,(w_wc+str(1)).encode())
+        val = dsse_util.bytes_XOR(b1, b2)
         # 6. Send (addr, val) to the server
         A = int.from_bytes(dsse_util.prf_Fp(Ky,(str(id)+str(op)).encode(), self.p), 'little')
-        B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w)+str(self.st[w])).encode(), self.p), 'little')
-        print(B)
+        B = int.from_bytes(dsse_util.prf_Fp(Kz,(w_wc).encode(), self.p), 'little')
         B_inv = dsse_util.mul_inv(B, self.p-1)
         C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode(), self.p), 'little')
-
-        alpha = A*B_inv
+        α = A*B_inv
         xtag = pow(self.g, C*A, self.p)
-        self.conn.send(pickle.dumps((addr,val, alpha, xtag)))
+        self.conn.send(pickle.dumps((1,(addr, val, α, xtag))))
         print()
     
     def Search(self,q):
@@ -99,6 +100,8 @@ class odxt_client:
 
 
 if __name__ == "__main__":
+    HOST = sys.argv[1]
+    PORT = int(sys.argv[2])
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((HOST, PORT))
     client_obj = odxt_client(s)

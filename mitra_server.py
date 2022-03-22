@@ -1,5 +1,5 @@
 from http import server
-import pickle
+import pickle, sys
 import random, socket
 from constants import HOST,PORT
 
@@ -14,7 +14,7 @@ class mitra_server:
         if(resp_tup[0]==0):#for setup
             self.Setup(resp_tup[1])
         elif(resp_tup[0]==1):
-            self.Update((resp_tup[1],resp_tup[2]))
+            self.Update(resp_tup[1])
     #should recieve by socket, but can be called as direct function in client side, 
     #since server object can exist client side.
     #not ideal, but a workaround to actual implementation     
@@ -41,6 +41,8 @@ class mitra_server:
 
 
 if __name__=="__main__":
+    HOST = sys.argv[1]
+    PORT = int(sys.argv[2])
     
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
@@ -50,7 +52,7 @@ if __name__=="__main__":
     print('Connected by', addr)
     server_obj = mitra_server((conn,addr))
     server_obj.Run()
-    print("new edb recieved from server: ",server_obj.EDB)
+    print("new edb recieved to server: ",server_obj.EDB)
     server_obj.Run()
     print(server_obj.EDB)
     conn.close()

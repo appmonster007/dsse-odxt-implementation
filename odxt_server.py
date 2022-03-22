@@ -26,6 +26,7 @@ class mitra_server:
         addr,val,alpha,xtag = avax_tup
         TSet[addr]=(val,alpha)
         XSet.add(xtag)
+        self.EDB = (TSet, XSet)
     
     def Search(self,Tokenlists):
         n=len(Tokenlists)

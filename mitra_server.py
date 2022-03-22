@@ -15,6 +15,10 @@ class mitra_server:
             self.Setup(resp_tup[1])
         elif(resp_tup[0]==1):
             self.Update(resp_tup[1])
+        elif(resp_tup[0]==2):
+            self.Search(resp_tup[1])
+        # else:
+        #     print("invalid input")
     #should recieve by socket, but can be called as direct function in client side, 
     #since server object can exist client side.
     #not ideal, but a workaround to actual implementation     
@@ -28,14 +32,15 @@ class mitra_server:
     def Search(self,Tokenlists):
         n=len(Tokenlists)
         # 2. Initialize EOpList1; : : : ; EOpListn to empty lists
-        EOpLists = [list() for word in range(n)]
+        EOpLists = [list()]*n
         for i in range(n):
             for j in range(len(Tokenlists[i])):
                 # i. Set vali;j = TSet[tokenListi[j]]
-                val = self.EDB(Tokenlists[i][j])
+                val_ij = self.EDB[Tokenlists[i][j]]
                 # ii. Set EOpListi = EOpListi [ fvali;jg
-                EOpLists[i].append(val) #should be union, but assuming hash are unique, can be appended
+                EOpLists[i].append(val_ij) #should be union, but assuming hash are unique, can be appended
         # 5. Send EOpList1; : : : ; EOpListn to the client
+        self.conn.send(pickle.dumps((EOpLists,)))
         return EOpLists
     
 

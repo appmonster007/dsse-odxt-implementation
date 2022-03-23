@@ -6,21 +6,21 @@ from constants import HOST,PORT
 class mitra_server:
     def __init__(self, socket_tup) -> None:
         self.EDB = None
+        self.p = -1
         self.conn,self.sock_addr = socket_tup
 
     def Run(self):
-        # while(True):#not very safe
         resp_tup = pickle.loads(self.conn.recv(4096))
         if(resp_tup[0]==0):#for setup
             self.Setup(resp_tup[1])
         elif(resp_tup[0]==1):
             self.Update(resp_tup[1])
-    #should recieve by socket, but can be called as direct function in client side, 
-    #since server object can exist client side.
-    #not ideal, but a workaround to actual implementation     
-    def Setup(self,EDB):
-        self.EDB = EDB
-    #change to a better database in future
+        elif(resp_tup[0]==2):
+            self.Search(resp_tup[1])
+            
+    def Setup(self,res):
+        self.EDB, self.p = res
+        
     def Update(self,avax_tup):
         TSet, XSet = self.EDB
         addr,val,alpha,xtag = avax_tup
@@ -28,18 +28,23 @@ class mitra_server:
         XSet.add(xtag)
         self.EDB = (TSet, XSet)
     
-    def Search(self,Tokenlists):
-        n=len(Tokenlists)
-        # 2. Initialize EOpList1; : : : ; EOpListn to empty lists
-        EOpLists = [list() for word in range(n)]
-        for i in range(n):
-            for j in range(len(Tokenlists[i])):
-                # i. Set vali;j = TSet[tokenListi[j]]
-                val = self.EDB(Tokenlists[i][j])
-                # ii. Set EOpListi = EOpListi [ fvali;jg
-                EOpLists[i].append(val) #should be union, but assuming hash are unique, can be appended
-        # 5. Send EOpList1; : : : ; EOpListn to the client
-        return EOpLists
+    def Search(self, tknlists):
+        TSet, XSet = self.EDB
+        stokenlist = tknlists[0]
+        xtokenlists = tknlists[1]
+        n = len(stokenlist)
+        m = len(xtokenlists)
+        sEOpList = []
+        for j in range(n):
+            cnt = 1
+            sval, α = TSet[stokenlist[j]]
+            for i in range(m):
+                xtoken_ij = xtokenlists[j][i]
+                xtag_ij = pow(xtoken_ij, α, self.p)
+                if(XSet[xtag_ij]==1):
+                    cnt+=1
+            sEOpList.append((j,sval,cnt))
+        self.conn.send(pickle.dumps((sEOpList,)))
     
 
 

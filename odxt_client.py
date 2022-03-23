@@ -1,57 +1,42 @@
-import dsse_util, pickle, socket, sys
+import dsse_util, pickle, socket, sys, random
 from Crypto.Util import number
+import numpy as np
 from constants import HOST,PORT
 
 class odxt_client:
     def __init__(self, socket_conn):
-        self.sk = None
-        self.st = None
-        self.p = None
-        self.g = None
+        self.sk: tuple = ()
+        self.st: dict = None
+        self.p: int = -1
+        self.g: int = -1
         self.conn = socket_conn
-        # self.UpdateCnt = None
     
     # ODXT Setup(λ)
     def Setup(self, λ):
-        # 0. Set prime p and cyclic group generator g
         # self.p = number.getPrime(16)
         # self.g = dsse_util.findPrimitive(self.p)
         self.p = 14466107790023157743
         self.g = 2
-        # 1. Sample a uniformly random key KT for PRF F
-        # Kt = dsse_util.GEN(λ)
         Kt = dsse_util.gen_key_F(λ)
-        # 2. Sample uniformly random keys Kx, Ky, Kz for PRF Fp
         Kx = dsse_util.gen_key_F(λ)
         Ky = dsse_util.gen_key_F(λ)
         Kz = dsse_util.gen_key_F(λ)
-        # 3. Initialize UpdateCnt; TSet to empty maps
         UpdateCnt, Tset, XSet = dict(),dict(), set()
-        # 4. Set sk = (Kt, Kx, Ky, Kz) and st = UpdateCnt
         self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
-        # 5. Set EDB = TSet
         EDB = (Tset, XSet)
-        # 6. Send EDB to the server
-        self.conn.send(pickle.dumps((0,EDB)))
+        self.conn.send(pickle.dumps((0,(EDB, self.p))))
     
     def Update(self, op: str, id_w_tuple):
         id,w = id_w_tuple
         Kt, Kx, Ky, Kz = self.sk
-        # 1. Parse sk = KT and st = UpdateCnt
-        #already saved in object state
-        # 2. If UpdateCnt[w] is NULL then set UpdateCnt[w] = 0
         if(not w in self.st):
             self.st[w]=0
-        # 3. Set UpdateCnt[w] = UpdateCnt[w] + 1
         self.st[w]+=1
-        # 4. Set addr = F(KT,w||UpdateCnt[w]||0)
         w_wc = str(w)+str(self.st[w])
         addr = dsse_util.prf_F(Kt,(w_wc+str(0)).encode())
-        # 5. Set val = (id||op) (xor) F(KT,w||UpdateCnt[w]||1)
         b1 = (str(id)+str(op)).encode()
         b2 = dsse_util.prf_F(Kt,(w_wc+str(1)).encode())
         val = dsse_util.bytes_XOR(b1, b2)
-        # 6. Send (addr, val) to the server
         A = int.from_bytes(dsse_util.prf_Fp(Ky,(str(id)+str(op)).encode(), self.p), 'little')
         B = int.from_bytes(dsse_util.prf_Fp(Kz,(w_wc).encode(), self.p), 'little')
         B_inv = dsse_util.mul_inv(B, self.p-1)
@@ -59,44 +44,44 @@ class odxt_client:
         α = A*B_inv
         xtag = pow(self.g, C*A, self.p)
         self.conn.send(pickle.dumps((1,(addr, val, α, xtag))))
-        print()
     
     def Search(self,q):
         n=len(q)
-        # 2. Initialize tokenList1; : : : ; tokenListn to empty lists
-        tokenlists=[list() for word in range(n)]
-        # 3. For i = 1 to n:
-        for i in range(n):
-            wi = q[i]
-            # (a) For j = 1 to UpdateCnt[wi]:
-            for j in range(self.UpdateCnt[wi]):
-                # i. Set addri;j = F(KT ;wijjjjj0)
-                addr = dsse_util.ENC(self.sk,wi)
-                # ii. Set tokenListi = tokenListi [ faddri;jg
-                tokenlists[i].append(addr)
-        # 5. Send tokenList1; : : : ; tokenListn to the server
-
+        Kt, Kx, Ky, Kz = self.sk
+        min_uc = np.argmin(np.array(list(self.st.values())))
+        w1_uc = list(self.st.values())[min_uc]
+        w1 = list(self.st.keys())[min_uc]
+        stokenlist = []
+        xtokenlists = [list()]*w1_uc
+        for j in range(w1_uc):
+            saddr_j = dsse_util.prf_F(Kt, (str(w1)+str(j)+str(0)).encode())
+            stokenlist.append(saddr_j)
+            for i in range(n):
+                if(q[i] != w1):
+                    A = int.from_bytes(dsse_util.prf_Fp(Kx,(str(q[i])).encode(), self.p), 'little')
+                    B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w1)+str(j)).encode(), self.p), 'little')
+                    xtoken = pow(self.g, A*B, self.p)
+                    xtokenlists[j].append(xtoken)
+            random.shuffle(xtokenlists[j])
+        res = (stokenlist, xtokenlists)
+        self.conn.send(pickle.dumps((2,res)))
+            
         #
         #SERVER WORK
         #
+        resp_tup = pickle.loads(self.conn.recv(4096))
+        sEOpList = resp_tup[0]
+        IdList = []
+        for l in sEOpList:
+            j,sval,cnt = sEOpList[l]
+            id_op = dsse_util.bytes_XOR(sval, dsse_util.prf_F(Kt, (str(w1)+str(j)+str(1)).encode()))
 
-        #recieve from server
-        EOpLists=[]
-        #Initialize IdList1; : : : ; IdListn to empty lists
-        IdLists = [list() for word in range(n)]
-        # 2. For i = 1 to n:
-        for i in range(n):
-            # (a) For j = 1 to UpdateCnt[wi]:
-            for j in range(self.UpdateCnt):
-                id,op = dsse_util.xor(EOpLists[j],dsse_util.ENC(q[i]))
-                # ii. If opi;j is add then set IdListi = IdListi [ fidi;jg
-                if(op=='add'):
-                    IdLists[i].append(id)
-                # iii. Else set IdListi = IdListi n fidi;jg
-                elif(op=='update'):
-                    IdLists[i] = IdLists[i]/id #unsure if this is correct
-        # 4. Output IdList = \n i=1IdListi
-        return list(set.intersection(*IdLists))
+            if(id_op[-3:]=='add' and cnt==n):
+                IdList.append(int(id_op[:-3]))
+            elif(id_op[-3:]=='del' and cnt>0):
+                IdList.remove(int(id_op[:-3]))
+
+        return list(set(IdList))
 
 
 if __name__ == "__main__":

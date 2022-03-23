@@ -3,10 +3,10 @@ import dsse_util
 from constants import HOST,PORT
 
 class mitra_client:
-    def __init__(self,socket_conn):
-        self.sk = None
-        self.st = None
-        self.socket_conn = socket_conn
+    def __init__(self,conn):
+        self.sk: bytes = None
+        self.st: dict = None
+        self.conn = conn
     
     #MITRA conj. Setup(λ)
     def Setup(self,λ):
@@ -19,7 +19,7 @@ class mitra_client:
         # 4. Set EDB = TSet
         EDB = Tset
         # 5. Send EDB to the server
-        self.socket_conn.send(pickle.dumps((0,EDB)))
+        self.conn.send(pickle.dumps((0,EDB)))
     
     def Update(self,op,id_w_tuple):
         id,w = id_w_tuple
@@ -35,7 +35,7 @@ class mitra_client:
         # 5. Set val = (id||op) (xor) F(Kt,w||UpdateCnt[w]||1)
         val = dsse_util.bytes_XOR((str(id)+str(op)).encode(), dsse_util.prf_F(self.sk,(str(w)+str(self.st[w])+str(1)).encode()))
         # 6. Send (addr, val) to the server
-        self.socket_conn.send(pickle.dumps((1,(addr,val))))
+        self.conn.send(pickle.dumps((1,(addr,val))))
         print(addr,val)
     
     def Search(self,q):
@@ -53,7 +53,7 @@ class mitra_client:
                 # ii. Set tokenListi = tokenListi [ faddri;jg
                 tokenlists[i].append(addr_ij)
         # 5. Send tokenList1; : : : ; tokenListn to the server
-        self.socket_conn.send(pickle.dumps((2,tokenlists)))
+        self.conn.send(pickle.dumps((2,tokenlists)))
         #
         #SERVER WORK
         #

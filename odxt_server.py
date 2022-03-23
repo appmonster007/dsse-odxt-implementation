@@ -11,10 +11,13 @@ class mitra_server:
 
     def Run(self):
         resp_tup = pickle.loads(self.conn.recv(4096))
+        # print(resp_tup)
         if(resp_tup[0]==0):#for setup
             self.Setup(resp_tup[1])
+            self.conn.send(pickle.dumps((1,)))
         elif(resp_tup[0]==1):
             self.Update(resp_tup[1])
+            self.conn.send(pickle.dumps((1,)))
         elif(resp_tup[0]==2):
             self.Search(resp_tup[1])
             
@@ -23,10 +26,11 @@ class mitra_server:
         
     def Update(self,avax_tup):
         TSet, XSet = self.EDB
-        addr,val,alpha,xtag = avax_tup
-        TSet[addr]=(val,alpha)
+        addr,val,α,xtag = avax_tup
+        TSet[addr]=(val,α)
         XSet.add(xtag)
         self.EDB = (TSet, XSet)
+        print(len(self.EDB[1]))
     
     def Search(self, tknlists):
         TSet, XSet = self.EDB
@@ -34,16 +38,24 @@ class mitra_server:
         xtokenlists = tknlists[1]
         n = len(stokenlist)
         m = len(xtokenlists)
+        print(n,m, len(xtokenlists[0]),'-'*5)
         sEOpList = []
         for j in range(n):
             cnt = 1
-            sval, α = TSet[stokenlist[j]]
-            for i in range(m):
-                xtoken_ij = xtokenlists[j][i]
-                xtag_ij = pow(xtoken_ij, α, self.p)
-                if(XSet[xtag_ij]==1):
-                    cnt+=1
-            sEOpList.append((j,sval,cnt))
+            # print(stokenlist[j], j)
+            if(stokenlist[j] in TSet):
+                print('+'*10)
+            else:
+                print("-"*10)
+            if(stokenlist[j] in TSet):
+                sval, α = TSet[stokenlist[j]]
+                for i in range(len(xtokenlists[j])):
+                    xtoken_ij = xtokenlists[j][i]
+                    xtag_ij = pow(xtoken_ij, α, self.p)
+                    print(xtag_ij)
+                    if(xtag_ij in XSet):
+                        cnt+=1
+                sEOpList.append((j,sval,cnt))
         self.conn.send(pickle.dumps((sEOpList,)))
     
 
@@ -56,10 +68,12 @@ if __name__=="__main__":
     s.listen(1)
 
     conn, addr = s.accept()
-    print('Connected by', addr)
+    # print('Connected by', addr)
     server_obj = mitra_server((conn,addr))
     server_obj.Run()
-    print("new edb recieved from server: ",server_obj.EDB)
+    # print("new edb recieved to server: ",server_obj.EDB)
     server_obj.Run()
-    print(server_obj.EDB)
-    conn.close()
+    # print(server_obj.EDB)
+    while(True):
+        server_obj.Run()
+    # conn.close()

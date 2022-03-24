@@ -15,11 +15,17 @@ class mitra_server:
         if(resp_tup[0]==0):#for setup
             self.Setup(resp_tup[1])
             self.conn.send(pickle.dumps((1,)))
+            return 1
         elif(resp_tup[0]==1):
             self.Update(resp_tup[1])
             self.conn.send(pickle.dumps((1,)))
+            return 1
         elif(resp_tup[0]==2):
             self.Search(resp_tup[1])
+            return 1
+        elif(resp_tup[0]=="q"):
+            self.conn.close()
+            return 0
             
     def Setup(self,res):
         self.EDB, self.p = res
@@ -30,7 +36,7 @@ class mitra_server:
         TSet[addr]=(val,α)
         XSet.add(xtag)
         self.EDB = (TSet, XSet)
-        print(len(self.EDB[1]))
+        # print(len(self.EDB[1]))
     
     def Search(self, tknlists):
         TSet, XSet = self.EDB
@@ -45,10 +51,10 @@ class mitra_server:
             for xt in xtokenlists[j]:
                 xtoken_ij = xt
                 xtag_ij = pow(xtoken_ij, α, self.p)
-                print(xtag_ij)
+                # print(xtag_ij)
                 if(xtag_ij in XSet):
                     cnt+=1
-            print("count:", cnt)
+            # print("count:", cnt)
             sEOpList.append((j,sval,cnt))
         self.conn.send(pickle.dumps((sEOpList,)))
     
@@ -68,6 +74,7 @@ if __name__=="__main__":
     # print("new edb recieved to server: ",server_obj.EDB)
     server_obj.Run()
     # print(server_obj.EDB)
-    while(True):
-        server_obj.Run()
+    run = 1
+    while(run):
+        run = server_obj.Run()
     # conn.close()

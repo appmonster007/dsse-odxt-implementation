@@ -1,3 +1,4 @@
+from pydoc import cli
 from xmlrpc.client import MAXINT
 import dsse_util, pickle, socket, sys, random
 from Crypto.Util import number
@@ -53,7 +54,7 @@ class odxt_client:
         B_inv = dsse_util.mul_inv(B, self.p-1)
         C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode(), self.p, self.g), 'little')
         α = (A*B_inv)
-        print(f"B {B}\tBinv {B_inv}\t{w_wc, op, id, pow(self.g, B*B_inv, self.p)}")
+        # print(f"B {B}\tBinv {B_inv}\t{w_wc, op, id, pow(self.g, B*B_inv, self.p)}")
         xtag = pow(self.g, C*A, self.p)
         # print(xtag)
         # print(w_wc, op, id)
@@ -87,7 +88,7 @@ class odxt_client:
                 stokenlist.append(saddr_j)
                 xtl = []
                 B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w1)+str(j+1)).encode(), self.p, self.g), 'little')
-                print(f"B--{B}")
+                # print(f"B--{B}")
                 for i in range(n):
                     # print(1, q[i], w1, q[i] != w1)
                     if(q[i] != w1):
@@ -114,13 +115,13 @@ class odxt_client:
             op_id = dsse_util.bytes_XOR(sval, dsse_util.prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode()))
             # print(op_id)
             op_id = op_id.decode().rstrip('\x00')
-            print(op_id, op_id[3:], len(op_id), cnt)
+            # print(op_id, op_id[3:], len(op_id), cnt)
             if(op_id[:3]=='add' and cnt==n):
                 IdList.append(int(op_id[3:]))
-                print('+')
+                # print('+')
             elif(op_id[:3]=='del' and cnt>0 and int(op_id[3:]) in IdList):
                 IdList.remove(int(op_id[3:]))
-                print('-')
+                # print('-')
         # print(self.st)
         print(list(set(IdList)))
         return list(set(IdList))
@@ -143,12 +144,12 @@ if __name__ == "__main__":
     client_obj.Update('add',(8,"apple"))
     client_obj.Update('del',(7,"apple"))
 
-    # client_obj.Update('add',(3,"banana"))
-    # client_obj.Update('add',(4,"banana"))
-    # client_obj.Update('add',(5,"banana"))
-    # client_obj.Update('add',(6,"banana"))
-    # client_obj.Update('add',(7,"banana"))
-    # client_obj.Update('del',(4,"banana"))
+    client_obj.Update('add',(3,"banana"))
+    client_obj.Update('add',(4,"banana"))
+    client_obj.Update('add',(5,"banana"))
+    client_obj.Update('add',(6,"banana"))
+    client_obj.Update('add',(7,"banana"))
+    client_obj.Update('del',(4,"banana"))
 
     client_obj.Update('add',(3,"pincode"))
     client_obj.Update('add',(4,"pincode"))
@@ -162,7 +163,10 @@ if __name__ == "__main__":
     # client_obj.Search(["banana"])
     # print("Search for pincode")
     # client_obj.Search(["pincode"])
-    print("Search for apple and pincode")
-    client_obj.Search(["apple", "pincode"])
+    print("Search for apple and banana")
+    client_obj.Search(["apple", "banana"])
+    print("Search for apple and pincode and banana")
+    client_obj.Search(["apple", "pincode", "banana"])
+    client_obj.conn.send(pickle.dumps(("q",)))
     s.close()
     

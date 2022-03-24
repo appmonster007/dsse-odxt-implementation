@@ -11,7 +11,6 @@ class mitra_server:
 
     def Run(self):
         resp_tup = pickle.loads(self.conn.recv(4096))
-        # print(resp_tup)
         if(resp_tup[0]==0):#for setup
             self.Setup(resp_tup[1])
             self.conn.send(pickle.dumps((1,)))
@@ -36,14 +35,12 @@ class mitra_server:
         TSet[addr]=(val,α)
         XSet.add(xtag)
         self.EDB = (TSet, XSet)
-        # print(len(self.EDB[1]))
     
     def Search(self, tknlists):
         TSet, XSet = self.EDB
         stokenlist = tknlists[0]
         xtokenlists = tknlists[1]
         n = len(stokenlist)
-        # print(n,m, len(xtokenlists[0]),'-'*5)
         sEOpList = []
         for j in range(n):
             cnt = 1
@@ -51,10 +48,8 @@ class mitra_server:
             for xt in xtokenlists[j]:
                 xtoken_ij = xt
                 xtag_ij = pow(xtoken_ij, α, self.p)
-                # print(xtag_ij)
                 if(xtag_ij in XSet):
                     cnt+=1
-            # print("count:", cnt)
             sEOpList.append((j,sval,cnt))
         self.conn.send(pickle.dumps((sEOpList,)))
     

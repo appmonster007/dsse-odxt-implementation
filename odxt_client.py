@@ -49,15 +49,15 @@ class odxt_client:
         b1 = (str(op)+str(id)).encode()
         b2 = dsse_util.prf_F(Kt,(w_wc+str(1)).encode())
         val = dsse_util.bytes_XOR(b1, b2)
-        A = int.from_bytes(dsse_util.prf_Fp(Ky, b1, self.p, self.g), 'little')
-        B = int.from_bytes(dsse_util.prf_Fp(Kz,(w_wc).encode(), self.p, self.g), 'little')
+        A0 = dsse_util.prf_Fp(Ky, b1, self.p, self.g)
+        A = int.from_bytes(A0, 'little')
+        B0 = dsse_util.prf_Fp(Kz,(w_wc).encode(), self.p, self.g)
+        B = int.from_bytes(B0, 'little')
         B_inv = dsse_util.mul_inv(B, self.p-1)
-        C = int.from_bytes(dsse_util.prf_Fp(Kx, str(w).encode(), self.p, self.g), 'little')
+        C0 = dsse_util.prf_Fp(Kx, str(w).encode(), self.p, self.g)
+        C = int.from_bytes(C0, 'little')
         α = (A*B_inv)
-        # print(f"B {B}\tBinv {B_inv}\t{w_wc, op, id, pow(self.g, B*B_inv, self.p)}")
         xtag = pow(self.g, C*A, self.p)
-        # print(xtag)
-        # print(w_wc, op, id)
         self.conn.send(pickle.dumps((1,(addr, val, α, xtag))))
         if(pickle.loads(self.conn.recv(4096))==(1,)):
             print("Update completed")
@@ -71,36 +71,28 @@ class odxt_client:
     
         w1_uc = MAXINT
         w1 = ""
-        # print(self.st)
         for x in q:
             if x in self.st and self.st[x] < w1_uc:
                 w1 = x
-                # print(x)
                 w1_uc = self.st[x]
         stokenlist = []
-        # xtokenlists = [list()]*w1_uc
         xtokenlists = []
-        # print(xtokenlists, w1_uc, n)
         if(w1 in self.st):
             for j in range(w1_uc):
-                # print(2)
                 saddr_j = dsse_util.prf_F(Kt, (str(w1)+str(j+1)+str(0)).encode())
                 stokenlist.append(saddr_j)
                 xtl = []
-                B = int.from_bytes(dsse_util.prf_Fp(Kz,(str(w1)+str(j+1)).encode(), self.p, self.g), 'little')
-                # print(f"B--{B}")
+                B0 = dsse_util.prf_Fp(Kz,(str(w1)+str(j+1)).encode(), self.p, self.g)
+                B = int.from_bytes(B0, 'little')
                 for i in range(n):
-                    # print(1, q[i], w1, q[i] != w1)
                     if(q[i] != w1):
-                        A = int.from_bytes(dsse_util.prf_Fp(Kx,(str(q[i])).encode(), self.p, self.g), 'little')
-                        # print(A,B)
+                        A0 = dsse_util.prf_Fp(Kx,(str(q[i])).encode(), self.p, self.g)
+                        A = int.from_bytes(A0, 'little')
                         xtoken = pow(self.g, A*B, self.p)
                         xtl.append(xtoken)
                 random.shuffle(xtl)
                 xtokenlists.append(xtl)
-        # print(xtokenlists, w1_uc, n)
         res = (stokenlist, xtokenlists)
-        # print(len(stokenlist), len(xtokenlists), len(xtokenlists[0]))
         self.conn.send(pickle.dumps((2,res)))
             
         #
@@ -110,19 +102,14 @@ class odxt_client:
         sEOpList = resp_tup[0]
         IdList = []
         for l in sEOpList:
-            # print(l)
             j,sval,cnt = l
-            op_id = dsse_util.bytes_XOR(sval, dsse_util.prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode()))
-            # print(op_id)
+            X0 = dsse_util.prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode())
+            op_id = dsse_util.bytes_XOR(sval, X0)
             op_id = op_id.decode().rstrip('\x00')
-            # print(op_id, op_id[3:], len(op_id), cnt)
             if(op_id[:3]=='add' and cnt==n):
                 IdList.append(int(op_id[3:]))
-                # print('+')
             elif(op_id[:3]=='del' and cnt>0 and int(op_id[3:]) in IdList):
                 IdList.remove(int(op_id[3:]))
-                # print('-')
-        # print(self.st)
         print(list(set(IdList)))
         return list(set(IdList))
 
@@ -165,6 +152,8 @@ if __name__ == "__main__":
     # client_obj.Search(["pincode"])
     print("Search for apple and banana")
     client_obj.Search(["apple", "banana"])
+    print("Search for apple and pincode")
+    client_obj.Search(["apple", "pincode"])
     print("Search for apple and pincode and banana")
     client_obj.Search(["apple", "pincode", "banana"])
     client_obj.conn.send(pickle.dumps(("q",)))

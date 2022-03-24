@@ -37,25 +37,19 @@ class mitra_server:
         stokenlist = tknlists[0]
         xtokenlists = tknlists[1]
         n = len(stokenlist)
-        m = len(xtokenlists)
-        print(n,m, len(xtokenlists[0]),'-'*5)
+        # print(n,m, len(xtokenlists[0]),'-'*5)
         sEOpList = []
         for j in range(n):
             cnt = 1
-            # print(stokenlist[j], j)
-            if(stokenlist[j] in TSet):
-                print('+'*10)
-            else:
-                print("-"*10)
-            if(stokenlist[j] in TSet):
-                sval, α = TSet[stokenlist[j]]
-                for i in range(len(xtokenlists[j])):
-                    xtoken_ij = xtokenlists[j][i]
-                    xtag_ij = pow(xtoken_ij, α, self.p)
-                    print(xtag_ij)
-                    if(xtag_ij in XSet):
-                        cnt+=1
-                sEOpList.append((j,sval,cnt))
+            sval, α = TSet[stokenlist[j]]
+            for xt in xtokenlists[j]:
+                xtoken_ij = xt
+                xtag_ij = pow(xtoken_ij, α, self.p)
+                print(xtag_ij)
+                if(xtag_ij in XSet):
+                    cnt+=1
+            print("count:", cnt)
+            sEOpList.append((j,sval,cnt))
         self.conn.send(pickle.dumps((sEOpList,)))
     
 

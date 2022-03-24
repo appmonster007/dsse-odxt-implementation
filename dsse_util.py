@@ -56,7 +56,7 @@ def prf_F(Key: bytes, M: bytes):
     rstr=(rval^Mval)
     return rstr.to_bytes(32, 'little')
 
-def prf_Fp(Key: bytes, M: bytes, p: int):
+def prf_Fp(Key: bytes, M: bytes, p: int, g: int):
     random.seed(Key)
     rval = random.getrandbits(MAXBITS)
     Mhash = hashlib.new('sha256')
@@ -65,7 +65,8 @@ def prf_Fp(Key: bytes, M: bytes, p: int):
     rstr = (rval^Mval)
     if(rstr%p==0):
         rstr+=1
-    return (rstr%p).to_bytes(32, 'little')
+    ex = (rstr%p)
+    return pow(g,ex,p-1).to_bytes(32, 'little')
     
 
 def findPrimefactors(s, n) :

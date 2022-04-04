@@ -1,7 +1,6 @@
-from http import server
 import pickle, sys
-import random, socket
-from constants import HOST,PORT
+import socket
+from util.constants import HOST,PORT
 
 class mitra_server:
     def __init__(self, socket_tup) -> None:
@@ -60,4 +59,7 @@ if __name__=="__main__":
     print("new edb recieved to server: ",server_obj.EDB)
     server_obj.Run()
     print(server_obj.EDB)
+    server_obj.Run()
+    server_obj.Run()
+    server_obj.Run()
     conn.close()

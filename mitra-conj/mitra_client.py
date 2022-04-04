@@ -1,6 +1,6 @@
 import functools, socket, pickle, sys
-import dsse_util
-from constants import HOST,PORT
+from util import dsse_util
+from util.constants import HOST,PORT
 
 class mitra_client:
     def __init__(self,conn):
@@ -86,7 +86,11 @@ if __name__ == "__main__":
     s.connect((HOST, PORT))
     client_obj = mitra_client(s)
     client_obj.Setup(100)
-    print(client_obj.sk,client_obj.st)
-    client_obj.Update('del',(1,"apple"))
+    # print(client_obj.sk,client_obj.st)
+    print("----")
+    client_obj.Update('add',(1,"apple"))
+    client_obj.Update('add',(2,"apple"))
+    client_obj.Update('add',(3,"apple"))
+    client_obj.Search(['apple'])
     s.close()
     

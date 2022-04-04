@@ -1,9 +1,7 @@
-from pydoc import cli
 from xmlrpc.client import MAXINT
-import dsse_util, pickle, socket, sys, random
-from Crypto.Util import number
-import numpy as np
-from constants import HOST,PORT
+import pickle, socket, sys, random
+from util.constants import HOST,PORT
+from util import dsse_util
 
 class odxt_client:
     def __init__(self, socket_conn):

@@ -1,0 +1,4 @@
+KEYSIZE = 10**8
+MAXBITS = 256
+HOST = 'localhost'
+PORT = 50007

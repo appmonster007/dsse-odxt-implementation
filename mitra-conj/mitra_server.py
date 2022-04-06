@@ -1,65 +1,62 @@
-import pickle, sys
-import socket
-from util.constants import HOST,PORT
+import pickle
+import sys
+import logging
+import socketserver
 
-class mitra_server:
-    def __init__(self, socket_tup) -> None:
+
+HOST = 'localhost'
+PORT = 50007
+
+logging.basicConfig(level=logging.INFO)
+
+
+class serverReqHandler(socketserver.BaseRequestHandler):
+    def __init__(self, request, addr, server):
+        super().__init__(request, addr, server)
+
+    def handle(self):
+        resp_tup = pickle.loads(self.request.recv(4096))
+        if(resp_tup[0] == 0):  # for setup
+            self.server.Setup(resp_tup[1])
+            data = (1,)
+            logging.debug("setup completed")
+        elif(resp_tup[0] == 1):
+            self.server.Update(resp_tup[1])
+            data = (1,)
+            logging.debug("update completed")
+        elif(resp_tup[0] == 2):
+            data = self.server.Search(resp_tup[1])
+            logging.debug("search completed")
+
+        self.request.sendall(pickle.dumps(data))
+        logging.debug('handled')
+
+
+class mitra_server(socketserver.TCPServer):
+    def __init__(self, addr, handler_class=serverReqHandler) -> None:
         self.EDB = None
-        self.conn,self.sock_addr = socket_tup
+        super().__init__(addr, handler_class)
 
-    def Run(self):
-        # while(True):#not very safe
-        resp_tup = pickle.loads(self.conn.recv(4096))
-        if(resp_tup[0]==0):#for setup
-            self.Setup(resp_tup[1])
-        elif(resp_tup[0]==1):
-            self.Update(resp_tup[1])
-        elif(resp_tup[0]==2):
-            self.Search(resp_tup[1])
-        # else:
-        #     print("invalid input")
-    #should recieve by socket, but can be called as direct function in client side, 
-    #since server object can exist client side.
-    #not ideal, but a workaround to actual implementation     
-    def Setup(self,EDB):
+    def Setup(self, EDB):
         self.EDB = EDB
-    #change to a better database in future
-    def Update(self,addr_val_tup):
-        addr,val=addr_val_tup
-        self.EDB[addr]=val
-    
-    def Search(self,Tokenlists):
-        n=len(Tokenlists)
-        # 2. Initialize EOpList1; : : : ; EOpListn to empty lists
-        EOpLists = [list()]*n
-        for i in range(n):
-            for j in range(len(Tokenlists[i])):
-                # i. Set vali;j = TSet[tokenListi[j]]
-                val_ij = self.EDB[Tokenlists[i][j]]
-                # ii. Set EOpListi = EOpListi [ fvali;jg
-                EOpLists[i].append(val_ij) #should be union, but assuming hash are unique, can be appended
-        # 5. Send EOpList1; : : : ; EOpListn to the client
-        self.conn.send(pickle.dumps((EOpLists,)))
-        return EOpLists
-    
+
+    def Update(self, addr_val_tup):
+        addr, val = addr_val_tup
+        self.EDB[addr] = val
+
+    def Search(self, Tokenlists):
+        EOpLists = []
+        for tknl_i in Tokenlists:
+            EOPL_i = []
+            for tknl_ij in tknl_i:
+                val_ij = self.EDB[tknl_ij]
+                EOPL_i.append(val_ij)
+            EOpLists.append(EOPL_i)
+        return (EOpLists,)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     HOST = sys.argv[1]
     PORT = int(sys.argv[2])
-    
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((HOST, PORT))
-    s.listen(1)
-
-    conn, addr = s.accept()
-    print('Connected by', addr)
-    server_obj = mitra_server((conn,addr))
-    server_obj.Run()
-    print("new edb recieved to server: ",server_obj.EDB)
-    server_obj.Run()
-    print(server_obj.EDB)
-    server_obj.Run()
-    server_obj.Run()
-    server_obj.Run()
-    conn.close()
+    server = mitra_server((HOST, PORT), serverReqHandler)
+    server.serve_forever()

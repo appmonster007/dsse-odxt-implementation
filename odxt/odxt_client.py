@@ -1,10 +1,12 @@
-from xmlrpc.client import MAXINT
 import pickle
 import socket
 import sys
 import random
-from util.constants import HOST, PORT
-from util import dsse_util
+from util import ODXTutil
+
+MAXINT = sys.maxsize
+HOST = 'localhost'
+PORT = 50057
 
 
 class odxt_client:
@@ -18,7 +20,7 @@ class odxt_client:
     # ODXT Setup(λ)
     def Setup(self, λ):
         # self.p = number.getPrime(16)
-        # self.g = dsse_util.findPrimitive(self.p)
+        # self.g = ODXTutil.findPrimitive(self.p)
 
         self.p = 14466107790023157743
         self.g = 65537
@@ -29,10 +31,10 @@ class odxt_client:
         # self.p = 20963
         # self.g = 65537
 
-        Kt = dsse_util.gen_key_F(λ)
-        Kx = dsse_util.gen_key_F(λ)
-        Ky = dsse_util.gen_key_F(λ)
-        Kz = dsse_util.gen_key_F(λ)
+        Kt = ODXTutil.gen_key_F(λ)
+        Kx = ODXTutil.gen_key_F(λ)
+        Ky = ODXTutil.gen_key_F(λ)
+        Kz = ODXTutil.gen_key_F(λ)
         UpdateCnt, Tset, XSet = dict(), dict(), set()
         self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
         EDB = (Tset, XSet)
@@ -52,16 +54,16 @@ class odxt_client:
             self.st[w] = 0
         self.st[w] += 1
         w_wc = str(w)+str(self.st[w])
-        addr = dsse_util.prf_F(Kt, (w_wc+str(0)).encode())
+        addr = ODXTutil.prf_F(Kt, (w_wc+str(0)).encode())
         b1 = (str(op)+str(id)).encode()
-        b2 = dsse_util.prf_F(Kt, (w_wc+str(1)).encode())
-        val = dsse_util.bytes_XOR(b1, b2)
-        A0 = dsse_util.prf_Fp(Ky, b1, self.p, self.g)
+        b2 = ODXTutil.prf_F(Kt, (w_wc+str(1)).encode())
+        val = ODXTutil.bytes_XOR(b1, b2)
+        A0 = ODXTutil.prf_Fp(Ky, b1, self.p, self.g)
         A = int.from_bytes(A0, 'little')
-        B0 = dsse_util.prf_Fp(Kz, (w_wc).encode(), self.p, self.g)
+        B0 = ODXTutil.prf_Fp(Kz, (w_wc).encode(), self.p, self.g)
         B = int.from_bytes(B0, 'little')
-        B_inv = dsse_util.mul_inv(B, self.p-1)
-        C0 = dsse_util.prf_Fp(Kx, str(w).encode(), self.p, self.g)
+        B_inv = ODXTutil.mul_inv(B, self.p-1)
+        C0 = ODXTutil.prf_Fp(Kx, str(w).encode(), self.p, self.g)
         C = int.from_bytes(C0, 'little')
         α = (A*B_inv)
         xtag = pow(self.g, C*A, self.p)
@@ -91,16 +93,16 @@ class odxt_client:
         xtokenlists = []
         if(w1 in self.st):
             for j in range(w1_uc):
-                saddr_j = dsse_util.prf_F(
+                saddr_j = ODXTutil.prf_F(
                     Kt, (str(w1)+str(j+1)+str(0)).encode())
                 stokenlist.append(saddr_j)
                 xtl = []
-                B0 = dsse_util.prf_Fp(
+                B0 = ODXTutil.prf_Fp(
                     Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
                 B = int.from_bytes(B0, 'little')
                 for i in range(n):
                     if(q[i] != w1):
-                        A0 = dsse_util.prf_Fp(
+                        A0 = ODXTutil.prf_Fp(
                             Kx, (str(q[i])).encode(), self.p, self.g)
                         A = int.from_bytes(A0, 'little')
                         xtoken = pow(self.g, A*B, self.p)
@@ -121,8 +123,8 @@ class odxt_client:
         IdList = []
         for l in sEOpList:
             j, sval, cnt = l
-            X0 = dsse_util.prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode())
-            op_id = dsse_util.bytes_XOR(sval, X0)
+            X0 = ODXTutil.prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode())
+            op_id = ODXTutil.bytes_XOR(sval, X0)
             op_id = op_id.decode().rstrip('\x00')
             if(op_id[:3] == 'add' and cnt == n):
                 IdList.append(int(op_id[3:]))

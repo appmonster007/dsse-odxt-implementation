@@ -1,7 +1,10 @@
 import random
 import hashlib
 from math import sqrt, gcd
-from .constants import KEYSIZE, MAXBITS
+
+
+KEYSIZE = 10**8
+MAXBITS = 256
 
 
 def bytes_XOR(b1: bytes, b2: bytes):

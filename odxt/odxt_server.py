@@ -2,7 +2,9 @@ import pickle
 import sys
 import logging
 import socketserver
-from util.constants import HOST, PORT
+
+HOST = 'localhost'
+PORT = 50057
 
 logging.basicConfig(level=logging.INFO)
 

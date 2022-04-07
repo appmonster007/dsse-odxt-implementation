@@ -15,24 +15,18 @@ class mitra_client:
         self.st: dict = None
         self.addr = addr
 
-    # MITRA conj. Setup(λ)
     def Setup(self, λ):
-        # 1. Sample a uniformly random key Kt for PRF F
         Kt = dsse_util.gen_key_F(λ)
-        # 2. Initialize UpdateCnt; TSet to empty maps
         UpdateCnt, Tset = dict(), dict()
-        # 3. Set sk = Kt and st = UpdateCnt
         self.sk, self.st = Kt, UpdateCnt
-        # 4. Set EDB = TSet
         EDB = Tset
-        # 5. Send EDB to the server
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
         conn.send(pickle.dumps((0, EDB)))
         data = pickle.loads(conn.recv(4096))
-        print(f"setup{data}")
-        if(data == (1,)):
-            print("Setup completed")
+        # print(f"setup{data}")
+        # if(data == (1,)):
+        #     print("Setup completed")
         conn.close()
 
     def Update(self, op, id_w_tuple):
@@ -48,9 +42,9 @@ class mitra_client:
         conn.connect(self.addr)
         conn.send(pickle.dumps((1, (addr, val))))
         data = pickle.loads(conn.recv(1024))
-        print(f"setup{data}")
-        if(data == (1,)):
-            print("Update completed")
+        # print(f"setup{data}")
+        # if(data == (1,)):
+        #     print("Update completed")
         conn.close()
 
     def Search(self, q):
@@ -78,7 +72,6 @@ class mitra_client:
             for j in range(self.st[q[i]]):
                 op_id = dsse_util.bytes_XOR(EOpLists[i][j], dsse_util.prf_F(
                     self.sk, (str(q[i])+str(j+1)+str(1)).encode()))
-                # print(op_id)
                 op_id = op_id.decode().rstrip('\x00')
                 if(op_id[:3] == 'add'):
                     idl.append(op_id[3:])
@@ -123,11 +116,11 @@ if __name__ == "__main__":
     client_obj.Search(["apple"])
     print("Search for banana")
     client_obj.Search(["banana"])
-    # print("Search for pincode")
-    # client_obj.Search(["pincode"])
+    print("Search for pincode")
+    client_obj.Search(["pincode"])
     print("Search for apple and banana")
     client_obj.Search(["apple", "banana"])
-    # print("Search for apple and pincode")
-    # client_obj.Search(["apple", "pincode"])
-    # print("Search for apple and pincode and banana")
-    # client_obj.Search(["apple", "pincode", "banana"])
+    print("Search for apple and pincode")
+    client_obj.Search(["apple", "pincode"])
+    print("Search for apple and pincode and banana")
+    client_obj.Search(["apple", "pincode", "banana"])

@@ -22,14 +22,13 @@ class odxt_client:
         # self.p = number.getPrime(16)
         # self.g = ODXTutil.findPrimitive(self.p)
 
-        self.p = 14466107790023157743
-        self.g = 65537
-
-        # self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
+        # self.p = 14466107790023157743
+        self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
         # self.p = 14120496892714447199
         # self.p = 9803877828113247241079792513194491218341545278043756244841606553497839645277744524007466705683349057071449190848792221929552903517949301195746698367877099
         # self.p = 20963
-        # self.g = 65537
+
+        self.g = 65537
 
         Kt = ODXTutil.gen_key_F(λ)
         Kx = ODXTutil.gen_key_F(λ)
@@ -42,9 +41,8 @@ class odxt_client:
         conn.connect(self.addr)
         conn.send(pickle.dumps((0, (EDB, self.p))))
         data = pickle.loads(conn.recv(4096))
-        print(f"setup{data}")
-        if(data == (1,)):
-            print("Setup completed")
+        # if(data == (1,)):
+        #     print("Setup completed")
         conn.close()
 
     def Update(self, op: str, id_w_tuple):
@@ -71,18 +69,13 @@ class odxt_client:
         conn.connect(self.addr)
         conn.send(pickle.dumps((1, (addr, val, α, xtag))))
         data = pickle.loads(conn.recv(1024))
-        print(f"setup{data}")
-        if(data == (1,)):
-            print("Update completed")
+        # if(data == (1,)):
+        #     print("Update completed")
         conn.close()
 
     def Search(self, q):
         n = len(q)
         Kt, Kx, Ky, Kz = self.sk
-        # min_uc = np.argmin(np.array(list(self.st.values())))
-        # w1_uc = list(self.st.values())[min_uc]
-        # w1 = list(self.st.keys())[min_uc]
-
         w1_uc = MAXINT
         w1 = ""
         for x in q:
@@ -171,12 +164,12 @@ if __name__ == "__main__":
     client_obj.Update('add', (6, "pincode"))
     client_obj.Update('add', (7, "pincode"))
     client_obj.Update('del', (3, "pincode"))
-    # print("Search for apple")
-    # client_obj.Search(["apple"])
-    # print("Search for banana")
-    # client_obj.Search(["banana"])
-    # print("Search for pincode")
-    # client_obj.Search(["pincode"])
+    print("Search for apple")
+    client_obj.Search(["apple"])
+    print("Search for banana")
+    client_obj.Search(["banana"])
+    print("Search for pincode")
+    client_obj.Search(["pincode"])
     print("Search for apple and banana")
     client_obj.Search(["apple", "banana"])
     print("Search for apple and pincode")

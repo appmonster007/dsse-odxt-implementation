@@ -74,9 +74,9 @@ class mitra_client:
                     self.sk, (str(q[i])+str(j+1)+str(1)).encode()))
                 op_id = op_id.decode().rstrip('\x00')
                 if(op_id[:3] == 'add'):
-                    idl.append(op_id[3:])
+                    idl.append(int(op_id[3:]))
                 elif(op_id[:3] == 'del'):
-                    idl.remove(op_id[3:]) 
+                    idl.remove(int(op_id[3:]))
             IdLists.append(idl) 
         IdList = list(set(functools.reduce(lambda x, y: list(set(x).intersection(set(y))), IdLists)))
         print(sorted(IdList))
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     client_obj.Update('add', (7, "apple"))
     client_obj.Update('add', (8, "apple"))
     client_obj.Update('del', (7, "apple"))
+    client_obj.Update('add', (7, "apple"))
 
     client_obj.Update('add', (3, "banana"))
     client_obj.Update('add', (4, "banana"))

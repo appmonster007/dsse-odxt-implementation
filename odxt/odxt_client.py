@@ -22,7 +22,7 @@ if __name__ == "__main__":
     client_obj.Update('add', (7, "apple"))
     client_obj.Update('add', (8, "apple"))
     client_obj.Update('del', (7, "apple"))
-    client_obj.Update('add', (7, "apple"))
+    # client_obj.Update('add', (7, "apple"))
 
     client_obj.Update('add', (3, "banana"))
     client_obj.Update('add', (4, "banana"))
@@ -47,5 +47,7 @@ if __name__ == "__main__":
     client_obj.Search(["apple", "banana"])
     print("Search for apple and pincode")
     client_obj.Search(["apple", "pincode"])
+    print("Search for banana and pincode")
+    client_obj.Search(["banana", "pincode"])
     print("Search for apple and pincode and banana")
     client_obj.Search(["apple", "pincode", "banana"])

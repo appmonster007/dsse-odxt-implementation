@@ -1,5 +1,5 @@
 import sys, logging
-from util.ODXClient import ODXTClient, flexODXTClient, suppODXTClient
+from util.ODXTClient import ODXTClient, flexODXTClient, suppODXTClient
 
 logging.basicConfig(level=logging.DEBUG)
 

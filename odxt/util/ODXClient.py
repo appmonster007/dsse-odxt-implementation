@@ -10,7 +10,7 @@ MAXINT = sys.maxsize
 class ODXTClient:
     def __init__(self, addr):
         self.sk: tuple = ()
-        self.st: dict = None
+        self.st: dict = {}
         self.p: int = -1
         self.g: int = -1
         self.addr = addr
@@ -21,12 +21,7 @@ class ODXTClient:
         # self.p = number.getPrime(16)
         # self.g = findPrimitive(self.p)
 
-        # self.p = 14466107790023157743
         self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
-        # self.p = 14120496892714447199
-        # self.p = 9803877828113247241079792513194491218341545278043756244841606553497839645277744524007466705683349057071449190848792221929552903517949301195746698367877099
-        # self.p = 20963
-
         self.g = 65537
 
         Kt = gen_key_F(λ)
@@ -44,8 +39,7 @@ class ODXTClient:
         #     print("Setup completed")
         conn.close()
 
-    def Update(self, op: str, id_w_tuple):
-        id, w = id_w_tuple
+    def Update(self, op: str, id, w):
         Kt, Kx, Ky, Kz = self.sk
         if(not w in self.st):
             self.st[w] = 0
@@ -62,11 +56,11 @@ class ODXTClient:
         B_inv = mul_inv(B, self.p-1)
         C0 = prf_Fp(Kx, str(w).encode(), self.p, self.g)
         C = int.from_bytes(C0, 'little')
-        α = (A*B_inv)
+        alpha = (A*B_inv)
         xtag = pow(self.g, C*A, self.p)
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
-        conn.send(pickle.dumps((1, (addr, val, α, xtag))))
+        conn.send(pickle.dumps((1, (addr, val, alpha, xtag))))
         data = pickle.loads(conn.recv(1024))
         # if(data == (1,)):
         #     print("Update completed")
@@ -133,30 +127,25 @@ class ODXTClient:
         conn.close()
 
 
-class ODXTClientV2:
+class flexODXTClient:
     def __init__(self, addr):
         self.sk: tuple = ()
-        self.st: dict = None
+        self.st: dict = {}
         self.p: int = -1
         self.g: int = -1
         self.addr = addr
         self.upCnt = 0
 
-    def opConj(self, op):
-        if(op == 'add'):
-            return 'del'
-        if(op == 'del'):
-            return 'add'
+        self.opConj = {
+            "add" : "del",
+            "del" : "add"
+        }
 
     def Setup(self, λ):
         # self.p = number.getPrime(16)
         # self.g = findPrimitive(self.p)
 
-        # self.p = 14466107790023157743
         self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
-        # self.p = 14120496892714447199
-        # self.p = 9803877828113247241079792513194491218341545278043756244841606553497839645277744524007466705683349057071449190848792221929552903517949301195746698367877099
-        # self.p = 20963
 
         self.g = 65537
 
@@ -175,9 +164,8 @@ class ODXTClientV2:
         #     print("Setup completed")
         conn.close()
 
-    def Update(self, op: str, id_w_tuple):
+    def Update(self, op: str, id, w):
         self.upCnt += 1
-        id, w = id_w_tuple
         Kt, Kx, Ky, Kz = self.sk
         if(not w in self.st):
             self.st[w] = 0
@@ -185,25 +173,28 @@ class ODXTClientV2:
         w_wc = str(w)+str(self.st[w])
         addr = prf_F(Kt, (w_wc+str(0)).encode())
         b1 = (str(op)+str(id)).encode()
+        b1_c = (str(self.opConj[op])+str(id)).encode()
         b2 = prf_F(Kt, (w_wc+str(1)).encode())
-        b3 = (str(self.opConj(op))+str(id)).encode()
         val = bytes_XOR(b1, b2)
-        A0 = prf_Fp(Ky, b1, self.p, self.g)
-        A = int.from_bytes(A0, 'little')
-        A_inv = mul_inv(A, self.p-1)
-        A1 = prf_Fp(Ky, b3, self.p, self.g)
-        A_p = int.from_bytes(A1, 'little')
-        B0 = prf_Fp(Kz, (w_wc).encode(), self.p, self.g)
-        B = int.from_bytes(B0, 'little')
+        val_c = bytes_XOR(b1_c, b2)
+        A = int.from_bytes(prf_Fp(Ky, b1, self.p, self.g), 'little')
+        A_c = int.from_bytes(prf_Fp(Ky, b1_c, self.p, self.g), 'little')
+        B = int.from_bytes(prf_Fp(Kz, (w_wc).encode(), self.p, self.g), 'little')
         B_inv = mul_inv(B, self.p-1)
-        C0 = prf_Fp(Kx, str(w).encode(), self.p, self.g)
-        C = int.from_bytes(C0, 'little')
-        α = (A*B_inv)
-        beta = (A_inv*A_p)
+        C = int.from_bytes(prf_Fp(Kx, str(w).encode(), self.p, self.g), 'little')
+        alpha = (A*B_inv)
+        alpha_c = (A_c*B_inv)
         xtag = pow(self.g, C*A, self.p)
+        xtag_c = pow(self.g, C*A_c, self.p)
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
-        conn.send(pickle.dumps((1, (addr, val, (α, beta), xtag, self.upCnt))))
+        conn.send(pickle.dumps((1, (addr, val_c, (alpha_c, alpha), xtag_c))))
+        data = pickle.loads(conn.recv(1024))
+        conn.close()
+
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn.connect(self.addr)
+        conn.send(pickle.dumps((1, (addr, val, (alpha, alpha_c), xtag))))
         data = pickle.loads(conn.recv(1024))
         # if(data == (1,)):
         #     print("Update completed")
@@ -218,13 +209,11 @@ class ODXTClientV2:
             if x in self.st and self.st[x] < w1_uc:
                 w1 = x
                 w1_uc = self.st[x]
-        stokenlist = []
-        xtokenlists = []
+        sxTokenList = []
         if(w1 in self.st):
             for j in range(w1_uc):
                 saddr_j = prf_F(
                     Kt, (str(w1)+str(j+1)+str(0)).encode())
-                stokenlist.append(saddr_j)
                 xtl = []
                 B0 = prf_Fp(
                     Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
@@ -237,8 +226,8 @@ class ODXTClientV2:
                         xtoken = pow(self.g, A*B, self.p)
                         xtl.append(xtoken)
                 random.shuffle(xtl)
-                xtokenlists.append(xtl)
-        res = (stokenlist, xtokenlists)
+                sxTokenList.append((saddr_j, xtl))
+        res = sxTokenList
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
         conn.send(pickle.dumps((2, res)))

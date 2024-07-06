@@ -1,6 +1,7 @@
 import socketserver
 import pickle
 import logging
+from datetime import datetime
 
 
 class serverReqHandler(socketserver.BaseRequestHandler):
@@ -36,8 +37,8 @@ class ODXTServer(socketserver.TCPServer):
 
     def Update(self, avax_tup):
         TSet, XSet = self.EDB
-        addr, val, α, xtag = avax_tup
-        TSet[addr] = (val, α)
+        addr, val, alpha, xtag = avax_tup
+        TSet[addr] = (val, alpha)
         XSet.add(xtag)
         self.EDB = (TSet, XSet)
 
@@ -49,10 +50,10 @@ class ODXTServer(socketserver.TCPServer):
         sEOpList = []
         for j in range(n):
             cnt = 1
-            sval, α = TSet[stokenlist[j]]
+            sval, alpha = TSet[stokenlist[j]]
             for xt in xtokenlists[j]:
                 xtoken_ij = xt
-                xtag_ij = pow(xtoken_ij, α, self.p)
+                xtag_ij = pow(xtoken_ij, alpha, self.p)
                 if(xtag_ij in XSet):
                     cnt += 1
             sEOpList.append((j, sval, cnt))
@@ -81,7 +82,7 @@ class serverReqHandlerV2(socketserver.BaseRequestHandler):
         logging.debug('handled')
 
 
-class ODXTServerV2(socketserver.TCPServer):
+class flexODXTServer(socketserver.TCPServer):
     def __init__(self, addr, handler_class=serverReqHandlerV2) -> None:
         self.EDB = None
         self.p = -1
@@ -92,29 +93,26 @@ class ODXTServerV2(socketserver.TCPServer):
 
     def Update(self, avax_tup):
         TSet, XSet = self.EDB
-        addr, val, α, xtag, upCnt = avax_tup
-        TSet[addr] = (val, α)
-        XSet[xtag] = upCnt
+        addr, val, alpha, xtag = avax_tup
+        TSet[addr] = (val, alpha)
+        XSet[xtag] = datetime.now()
         self.EDB = (TSet, XSet)
 
-    def Search(self, tknlists):
+    def Search(self, sxtokenlist):
         TSet, XSet = self.EDB
-        stokenlist = tknlists[0]
-        xtokenlists = tknlists[1]
-        n = len(stokenlist)
+        n = len(sxtokenlist)
         sEOpList = []
         for j in range(n):
             cnt_i = 1
             cnt_j = 0
-            sval, α_beta = TSet[stokenlist[j]]
-            α, beta = α_beta
-            for xt in xtokenlists[j]:
-                xtoken_ij = xt
-                xtag_ij = pow(xtoken_ij, α, self.p)
-                xtag_ij_p = pow(xtag_ij, beta, self.p)
+            sval, alpha = TSet[sxtokenlist[j][0]]
+            a, a_c = alpha
+            for xt in sxtokenlist[j][1]:
+                xtag_ij = pow(xt, a, self.p)
+                xtag_ij_c = pow(xt, a_c, self.p)
                 if(xtag_ij in XSet):
                     cnt_i += 1
-                    if(xtag_ij_p in XSet and XSet[xtag_ij] < XSet[xtag_ij_p]):
+                    if(xtag_ij_c in XSet and XSet[xtag_ij] < XSet[xtag_ij_c]):
                         cnt_j += 1
             sEOpList.append((j, sval, cnt_i, cnt_j))
         return (sEOpList,)

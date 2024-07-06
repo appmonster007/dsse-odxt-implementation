@@ -1,5 +1,9 @@
-import sys
+import sys, logging
 from util.ODXClient import ODXTClient, flexODXTClient, suppODXTClient
+
+logging.basicConfig(level=logging.DEBUG)
+
+log = logging.getLogger(__name__)
 
 MAXINT = sys.maxsize
 HOST = 'localhost'
@@ -13,7 +17,6 @@ if __name__ == "__main__":
     # PORT = 50060
     client_obj = flexODXTClient((HOST, PORT))
     client_obj.Setup(100)
-    # print(client_obj.sk,client_obj.st)
 
     client_obj.Update('add', 2, "apple")
     client_obj.Update('add', 4, "apple")
@@ -35,17 +38,19 @@ if __name__ == "__main__":
     client_obj.Update('add', 6, "pincode")
     client_obj.Update('add', 7, "pincode")
     client_obj.Update('del', 3, "pincode")
-    print("Search for apple")
-    client_obj.Search(["apple"])
-    print("Search for banana")
-    client_obj.Search(["banana"])
-    print("Search for pincode")
-    client_obj.Search(["pincode"])
-    print("Search for apple and banana")
-    client_obj.Search(["apple", "banana"])
-    print("Search for apple and pincode")
-    client_obj.Search(["apple", "pincode"])
-    print("Search for banana and pincode")
-    client_obj.Search(["banana", "pincode"])
-    print("Search for apple and pincode and banana")
-    client_obj.Search(["apple", "pincode", "banana"])
+
+    
+    log.info("Search for apple")
+    log.info(client_obj.Search(["apple"]))
+    log.info("Search for banana")
+    log.info(client_obj.Search(["banana"]))
+    log.info("Search for pincode")
+    log.info(client_obj.Search(["pincode"]))
+    log.info("Search for apple and banana")
+    log.info(client_obj.Search(["apple", "banana"]))
+    log.info("Search for apple and pincode")
+    log.info(client_obj.Search(["apple", "pincode"]))
+    log.info("Search for banana and pincode")
+    log.info(client_obj.Search(["banana", "pincode"]))
+    log.info("Search for apple and pincode and banana")
+    log.info(client_obj.Search(["apple", "pincode", "banana"]))

@@ -3,11 +3,11 @@ import sys
 import logging
 import socketserver
 
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 HOST = 'localhost'
 PORT = 50007
-
-logging.basicConfig(level=logging.INFO)
 
 
 class serverReqHandler(socketserver.BaseRequestHandler):
@@ -19,17 +19,19 @@ class serverReqHandler(socketserver.BaseRequestHandler):
         if(resp_tup[0] == 0):  # for setup
             self.server.Setup(resp_tup[1])
             data = (1,)
+            self.request.sendall(pickle.dumps(data))
             logging.debug("setup completed")
         elif(resp_tup[0] == 1):
             self.server.Update(resp_tup[1])
             data = (1,)
+            self.request.sendall(pickle.dumps(data))
             logging.debug("update completed")
         elif(resp_tup[0] == 2):
             data = self.server.Search(resp_tup[1])
+            self.request.sendall(pickle.dumps(data))
             logging.debug("search completed")
 
-        self.request.sendall(pickle.dumps(data))
-        logging.debug('handled')
+        return
 
 
 class mitra_server(socketserver.TCPServer):

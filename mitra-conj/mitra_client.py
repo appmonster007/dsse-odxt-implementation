@@ -2,7 +2,11 @@ import functools
 import socket
 import pickle
 import sys
+import logging
 from util import dsse_util
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 MAXINT = sys.maxsize
 HOST = 'localhost'
@@ -24,9 +28,9 @@ class mitra_client:
         conn.connect(self.addr)
         conn.send(pickle.dumps((0, EDB)))
         data = pickle.loads(conn.recv(4096))
-        # print(f"setup{data}")
+        # log.info(f"setup{data}")
         # if(data == (1,)):
-        #     print("Setup completed")
+        #     log.info("Setup completed")
         conn.close()
 
     def Update(self, op, id_w_tuple):
@@ -42,9 +46,9 @@ class mitra_client:
         conn.connect(self.addr)
         conn.send(pickle.dumps((1, (addr, val))))
         data = pickle.loads(conn.recv(1024))
-        # print(f"setup{data}")
+        # log.info(f"setup{data}")
         # if(data == (1,)):
-        #     print("Update completed")
+        #     log.info("Update completed")
         conn.close()
 
     def Search(self, q):
@@ -79,7 +83,7 @@ class mitra_client:
                     idl.remove(int(op_id[3:]))
             IdLists.append(idl) 
         IdList = list(set(functools.reduce(lambda x, y: list(set(x).intersection(set(y))), IdLists)))
-        print(sorted(IdList))
+        log.info(sorted(IdList))
         conn.close()
         return IdLists
 
@@ -89,7 +93,7 @@ if __name__ == "__main__":
     PORT = int(sys.argv[2])
     client_obj = mitra_client((HOST, PORT))
     client_obj.Setup(100)
-    # print(client_obj.sk,client_obj.st)
+    # log.info(client_obj.sk,client_obj.st)
 
     client_obj.Update('add', (2, "apple"))
     client_obj.Update('add', (4, "apple"))
@@ -113,15 +117,15 @@ if __name__ == "__main__":
     client_obj.Update('add', (6, "pincode"))
     client_obj.Update('add', (7, "pincode"))
     client_obj.Update('del', (3, "pincode"))
-    print("Search for apple")
+    log.info("Search for apple")
     client_obj.Search(["apple"])
-    print("Search for banana")
+    log.info("Search for banana")
     client_obj.Search(["banana"])
-    print("Search for pincode")
+    log.info("Search for pincode")
     client_obj.Search(["pincode"])
-    print("Search for apple and banana")
+    log.info("Search for apple and banana")
     client_obj.Search(["apple", "banana"])
-    print("Search for apple and pincode")
+    log.info("Search for apple and pincode")
     client_obj.Search(["apple", "pincode"])
-    print("Search for apple and pincode and banana")
+    log.info("Search for apple and pincode and banana")
     client_obj.Search(["apple", "pincode", "banana"])

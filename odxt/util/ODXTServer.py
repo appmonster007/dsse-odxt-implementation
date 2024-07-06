@@ -3,6 +3,7 @@ import pickle
 import logging
 from datetime import datetime
 
+log = logging.getLogger(__name__)
 
 class serverReqHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, addr, server):
@@ -13,17 +14,18 @@ class serverReqHandler(socketserver.BaseRequestHandler):
         if(resp_tup[0] == 0):  # for setup
             self.server.Setup(resp_tup[1])
             data = (1,)
-            logging.debug("setup completed")
+            self.request.sendall(pickle.dumps(data))
+            log.debug("setup completed")
         elif(resp_tup[0] == 1):
             self.server.Update(resp_tup[1])
             data = (1,)
-            logging.debug("update completed")
+            self.request.sendall(pickle.dumps(data))
+            log.debug("update completed")
         elif(resp_tup[0] == 2):
             data = self.server.Search(resp_tup[1])
-            logging.debug("search completed")
+            self.request.sendall(pickle.dumps(data))
+            log.debug("search completed")
 
-        self.request.sendall(pickle.dumps(data))
-        logging.debug('handled')
 
 
 class ODXTServer(socketserver.TCPServer):

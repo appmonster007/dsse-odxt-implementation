@@ -1,5 +1,8 @@
-import sys
+import sys, logging
 from util.ODXTServer import ODXTServer, flexODXTServer, serverReqHandler, serverReqHandler
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 HOST = 'localhost'
 PORT = 50057

@@ -2,7 +2,10 @@ import pickle
 import socket
 import random
 import sys
+import logging
 from .ODXTutil import *
+
+log = logging.getLogger(__name__)
 
 MAXINT = sys.maxsize
 
@@ -36,7 +39,7 @@ class ODXTClient:
         conn.send(pickle.dumps((0, (EDB, self.p))))
         data = pickle.loads(conn.recv(4096))
         # if(data == (1,)):
-        #     print("Setup completed")
+        #     log.info("Setup completed")
         conn.close()
         return 
 
@@ -64,7 +67,7 @@ class ODXTClient:
         conn.send(pickle.dumps((1, (addr, val, alpha, xtag))))
         data = pickle.loads(conn.recv(1024))
         # if(data == (1,)):
-        #     print("Update completed")
+        #     log.info("Update completed")
         conn.close()
 
     def Search(self, q):
@@ -120,7 +123,7 @@ class ODXTClient:
                 IdList.append(int(op_id[3:]))
             elif(op_id[:3] == 'del' and cnt > 0 and int(op_id[3:]) in IdList):
                 IdList.remove(int(op_id[3:]))
-        print(list(set(IdList)))
+        
         conn.close()
         return list(set(IdList))
 
@@ -178,7 +181,7 @@ class flexODXTClient(ODXTClient):
         conn.send(pickle.dumps((1, (addr, val, (alpha, alpha_c), xtag))))
         data = pickle.loads(conn.recv(1024))
         # if(data == (1,)):
-        #     print("Update completed")
+        #     log.info("Update completed")
         conn.close()
 
     def Search(self, q):
@@ -229,7 +232,7 @@ class flexODXTClient(ODXTClient):
                 IdList.append(int(op_id[3:]))
             elif(op_id[:3] == 'del' and cnt_i > 0 and int(op_id[3:]) in IdList):
                 IdList.remove(int(op_id[3:]))
-        print(list(set(IdList)))
+        
         conn.close()
         return list(set(IdList))
 
@@ -262,7 +265,7 @@ class suppODXTClient(ODXTClient):
         conn.send(pickle.dumps((0, (EDB, self.p))))
         data = pickle.loads(conn.recv(4096))
         # if(data == (1,)):
-        #     print("Setup completed")
+        #     log.info("Setup completed")
         conn.close()
 
         return
@@ -319,6 +322,6 @@ class suppODXTClient(ODXTClient):
                 IdList.append(int(op_id[3:]))
             elif(op_id[:3] == 'del' and cnt > 0 and int(op_id[3:]) in IdList):
                 IdList.remove(int(op_id[3:]))
-        print(list(set(IdList)))
+        
         conn.close()
         return list(set(IdList))

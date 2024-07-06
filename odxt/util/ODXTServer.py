@@ -58,15 +58,8 @@ class ODXTServer(socketserver.TCPServer):
 
 
 
-class flexODXTServer(socketserver.TCPServer):
-    def __init__(self, addr, handler_class=serverReqHandler) -> None:
-        self.EDB = None
-        self.p = -1
-        super().__init__(addr, handler_class)
-
-    def Setup(self, res):
-        self.EDB, self.p = res
-
+class flexODXTServer(ODXTServer):
+    
     def Update(self, avax_tup):
         TSet, XSet = self.EDB
         addr, val, alpha, xtag = avax_tup

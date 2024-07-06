@@ -131,7 +131,7 @@ class ODXTClient:
         conn.close()
 
 
-class flexODXTClient:
+class flexODXTClient(ODXTClient):
     def __init__(self, addr):
         self.sk: tuple = ()
         self.st: dict = {}
@@ -144,29 +144,6 @@ class flexODXTClient:
             "add" : "del",
             "del" : "add"
         }
-
-    def Setup(self, l):
-        # self.p = number.getPrime(16)
-        # self.g = findPrimitive(self.p)
-
-        self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
-
-        self.g = 65537
-
-        Kt = gen_key_F(l)
-        Kx = gen_key_F(l)
-        Ky = gen_key_F(l)
-        Kz = gen_key_F(l)
-        UpdateCnt, Tset, XSet = dict(), dict(), dict()
-        self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
-        EDB = (Tset, XSet)
-        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn.connect(self.addr)
-        conn.send(pickle.dumps((0, (EDB, self.p))))
-        data = pickle.loads(conn.recv(4096))
-        # if(data == (1,)):
-        #     print("Setup completed")
-        conn.close()
 
     def Update(self, op: str, id, w):
         self.upCnt += 1

@@ -1,5 +1,5 @@
 import sys
-from util.ODXClient import ODXTClient, flexODXTClient
+from util.ODXClient import ODXTClient, flexODXTClient, suppODXTClient
 
 MAXINT = sys.maxsize
 HOST = 'localhost'
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     PORT = int(sys.argv[2])
     # HOST = 'localhost'
     # PORT = 50060
-    client_obj = ODXTClient((HOST, PORT))
+    client_obj = flexODXTClient((HOST, PORT))
     client_obj.Setup(100)
     # print(client_obj.sk,client_obj.st)
 

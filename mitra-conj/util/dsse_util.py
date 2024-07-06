@@ -10,8 +10,8 @@ alphabet = string.ascii_letters + string.digits
 # SKE helper functions:
 
 
-def GEN(λ):
-    random.seed(λ)
+def GEN(l):
+    random.seed(l)
     return random.randint(KEYSIZE, KEYSIZE*10-1)
 # random module's probablistic algorithm is relied on for enc and dec
 
@@ -62,8 +62,8 @@ def mul_inv(a, b):
     return x1
 
 
-def gen_key_F(λ, bitsize=MAXBITS):
-    random.seed(λ)
+def gen_key_F(l, bitsize=MAXBITS):
+    random.seed(l)
     return random.getrandbits(bitsize).to_bytes(32, 'little')
 
 

@@ -27,8 +27,8 @@ def mul_inv(a, b):
     return x1
 
 
-def gen_key_F(λ, bitsize=MAXBITS):
-    random.seed(λ)
+def gen_key_F(l, bitsize=MAXBITS):
+    random.seed(l)
     return random.getrandbits(bitsize).to_bytes(32, 'little')
 
 
@@ -80,3 +80,13 @@ def findPrimitive(n):
         if (flag == False):
             return r
     return -1
+
+
+def shuffle_and_index(lst):
+    i_lst = list(enumerate(lst))
+    random.shuffle(i_lst)
+    return ([i[1] for i in i_lst], [i[0] for i in i_lst])
+
+def sort_by_order(lst, index):
+    e_lst = list(zip(index, lst))
+    return [i[1] for i in sorted(e_lst)]

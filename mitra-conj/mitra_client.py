@@ -15,8 +15,8 @@ class mitra_client:
         self.st: dict = None
         self.addr = addr
 
-    def Setup(self, λ):
-        Kt = dsse_util.gen_key_F(λ)
+    def Setup(self, l):
+        Kt = dsse_util.gen_key_F(l)
         UpdateCnt, Tset = dict(), dict()
         self.sk, self.st = Kt, UpdateCnt
         EDB = Tset

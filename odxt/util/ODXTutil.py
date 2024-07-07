@@ -5,11 +5,12 @@ from math import sqrt, gcd
 
 KEYSIZE = 10**8
 MAXBITS = 256
+MAXBYTES = 64
 
 
-def bytes_XOR(b1: bytes, b2: bytes):
-    return (int.from_bytes(b1, 'little') ^ int.from_bytes(b2, 'little')).to_bytes(32, 'little')
-
+def bytes_XOR(b1: bytes, b2: bytes) -> bytes:
+    return bytes(x^y for x,y in zip(b1, b2))
+    # return (int.from_bytes(b1) ^ int.from_bytes(b2)).to_bytes(32)
 
 def mul_inv(a, b):
     if(gcd(a, b) > 1):
@@ -29,30 +30,37 @@ def mul_inv(a, b):
 
 def gen_key_F(l, bitsize=MAXBITS):
     random.seed(l)
-    return random.getrandbits(bitsize).to_bytes(32, 'little')
+    return random.getrandbits(bitsize).to_bytes(32)
 
 
-def prf_F(Key: bytes, M: bytes):
+def prf_F(Key: bytes, M: bytes) -> bytes:
     random.seed(Key)
-    rval = random.getrandbits(MAXBITS)
+    # rval = random.getrandbits(MAXBITS)
+    rval = random.randbytes(MAXBYTES)
     Mhash = hashlib.new('sha256')
     Mhash.update(M)
-    Mval = int.from_bytes(Mhash.digest(), 'little')
-    rstr = (rval ^ Mval)
-    return rstr.to_bytes(32, 'little')
+    hs = Mhash.digest()
+    res = bytes_XOR(hs, rval)
+    return res
+    # Mval = int.from_bytes(Mhash.digest())
+    # rstr = (rval ^ Mval)
+    # return rstr.to_bytes(32)
 
 
-def prf_Fp(Key: bytes, M: bytes, p: int, g: int):
+def prf_Fp(Key: bytes, M: bytes, p: int, g: int) -> bytes:
     random.seed(Key)
-    rval = random.getrandbits(MAXBITS)
+    # rval = random.getrandbits(MAXBITS)
+    rval = random.randbytes(MAXBYTES)
     Mhash = hashlib.new('sha256')
     Mhash.update(M)
-    Mval = int.from_bytes(Mhash.digest(), 'little')
-    rstr = (rval ^ Mval)
-    if(rstr % p == 0):
-        rstr += 1
-    ex = (rstr % p)
-    return pow(g, ex, p-1).to_bytes(32, 'little')
+    hs = Mhash.digest()
+    res = int.from_bytes(bytes_XOR(hs, rval), byteorder="big")
+    # Mval = int.from_bytes(Mhash.digest())
+    # rstr = (rval ^ Mval)
+    if(res % p == 0):
+        res += 1
+    ex = (res % p)
+    return pow(g, ex, p-1).to_bytes(32)
 
 
 def findPrimefactors(s, n):

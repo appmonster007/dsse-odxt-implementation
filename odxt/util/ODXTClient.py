@@ -2,6 +2,7 @@ import pickle
 import socket
 import random
 import sys
+import math
 import logging
 from .ODXTutil import *
 
@@ -26,11 +27,14 @@ class ODXTClient:
 
         self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
         self.g = 65537
+        
+        random.seed(l)
 
-        Kt = gen_key_F(l)
-        Kx = gen_key_F(l)
-        Ky = gen_key_F(l)
-        Kz = gen_key_F(l)
+        Kt = gen_key_F(random.getrandbits(256))
+        Kx = gen_key_F(random.getrandbits(256))
+        Ky = gen_key_F(random.getrandbits(256))
+        Kz = gen_key_F(random.getrandbits(256))
+
         UpdateCnt, Tset, XSet = dict(), dict(), dict()
         self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
         EDB = (Tset, XSet)
@@ -53,15 +57,12 @@ class ODXTClient:
         b1 = (str(op)+str(id)).encode()
         b2 = prf_F(Kt, (w_wc+str(1)).encode())
         val = bytes_XOR(b1, b2)
-        A0 = prf_Fp(Ky, b1, self.p, self.g)
-        A = int.from_bytes(A0, 'little')
-        B0 = prf_Fp(Kz, (w_wc).encode(), self.p, self.g)
-        B = int.from_bytes(B0, 'little')
+        A = int.from_bytes(prf_Fp(Ky, b1, self.p, self.g))
+        B = int.from_bytes(prf_Fp(Kz, (w_wc).encode(), self.p, self.g))
         B_inv = mul_inv(B, self.p-1)
-        C0 = prf_Fp(Kx, str(w).encode(), self.p, self.g)
-        C = int.from_bytes(C0, 'little')
-        alpha = (A*B_inv)
-        xtag = pow(self.g, C*A, self.p)
+        C = int.from_bytes(prf_Fp(Kx, str(w).encode(), self.p, self.g))
+        alpha = (A*B_inv).to_bytes(MAXBYTES)
+        xtag = pow(self.g, C*A, self.p).to_bytes(MAXBYTES)
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
         conn.send(pickle.dumps((1, (addr, val, alpha, xtag))))
@@ -88,15 +89,11 @@ class ODXTClient:
                     Kt, (str(w1)+str(j+1)+str(0)).encode())
                 # stokenlist.append(saddr_j)
                 xtl = []
-                B0 = prf_Fp(
-                    Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
-                B = int.from_bytes(B0, 'little')
+                B = prf_Fp(Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
                 for i in range(n):
                     if(q[i] != w1):
-                        A0 = prf_Fp(
-                            Kx, (str(q[i])).encode(), self.p, self.g)
-                        A = int.from_bytes(A0, 'little')
-                        xtoken = pow(self.g, A*B, self.p)
+                        A = prf_Fp(Kx, (str(q[i])).encode(), self.p, self.g)
+                        xtoken = pow(self.g, int.from_bytes(A)*int.from_bytes(B), self.p).to_bytes(MAXBYTES)
                         xtl.append(xtoken)
                 random.shuffle(xtl)
                 # xtokenlists.append(xtl)
@@ -161,15 +158,15 @@ class flexODXTClient(ODXTClient):
         b2 = prf_F(Kt, (w_wc+str(1)).encode())
         val = bytes_XOR(b1, b2)
         val_c = bytes_XOR(b1_c, b2)
-        A = int.from_bytes(prf_Fp(Ky, b1, self.p, self.g), 'little')
-        A_c = int.from_bytes(prf_Fp(Ky, b1_c, self.p, self.g), 'little')
-        B = int.from_bytes(prf_Fp(Kz, (w_wc).encode(), self.p, self.g), 'little')
+        A = int.from_bytes(prf_Fp(Ky, b1, self.p, self.g))
+        A_c = int.from_bytes(prf_Fp(Ky, b1_c, self.p, self.g))
+        B = int.from_bytes(prf_Fp(Kz, (w_wc).encode(), self.p, self.g))
         B_inv = mul_inv(B, self.p-1)
-        C = int.from_bytes(prf_Fp(Kx, str(w).encode(), self.p, self.g), 'little')
-        alpha = (A*B_inv)
-        alpha_c = (A_c*B_inv)
-        xtag = pow(self.g, C*A, self.p)
-        xtag_c = pow(self.g, C*A_c, self.p)
+        C = int.from_bytes(prf_Fp(Kx, str(w).encode(), self.p, self.g))
+        alpha = (A*B_inv).to_bytes(MAXBYTES)
+        alpha_c = (A_c*B_inv).to_bytes(MAXBYTES)
+        xtag = pow(self.g, C*A, self.p).to_bytes(MAXBYTES)
+        xtag_c = pow(self.g, C*A_c, self.p).to_bytes(MAXBYTES)
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
         conn.send(pickle.dumps((1, (addr, val_c, (alpha_c, alpha), xtag_c))))
@@ -199,15 +196,11 @@ class flexODXTClient(ODXTClient):
                 saddr_j = prf_F(
                     Kt, (str(w1)+str(j+1)+str(0)).encode())
                 xtl = []
-                B0 = prf_Fp(
-                    Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
-                B = int.from_bytes(B0, 'little')
+                B = int.from_bytes(prf_Fp(Kz, (str(w1)+str(j+1)).encode(), self.p, self.g))
                 for i in range(n):
                     if(q[i] != w1):
-                        A0 = prf_Fp(
-                            Kx, (str(q[i])).encode(), self.p, self.g)
-                        A = int.from_bytes(A0, 'little')
-                        xtoken = pow(self.g, A*B, self.p)
+                        A = int.from_bytes(prf_Fp(Kx, (str(q[i])).encode(), self.p, self.g))
+                        xtoken = pow(self.g, A*B, self.p).to_bytes(MAXBYTES)
                         xtl.append(xtoken)
                 random.shuffle(xtl)
                 sxTokenList.append((saddr_j, xtl))
@@ -245,28 +238,31 @@ class flexODXTClient(ODXTClient):
 
 class suppODXTClient(ODXTClient):
     
-    def Setup(self, l, Ts = 10):
+    def Setup(self, l, Ts = 3):
         # self.p = number.getPrime(16)
         # self.g = findPrimitive(self.p)
-
-        self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
-        self.g = 65537
-
-        Kt = gen_key_F(l)
-        Kx = gen_key_F(l)
-        Ky = gen_key_F(l)
-        Kz = gen_key_F(l)
-        UpdateCnt, Tset, XSet = dict(), dict(), dict()
-        self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
         self.Ts = Ts
-        EDB = (Tset, XSet)
-        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn.connect(self.addr)
-        conn.send(pickle.dumps((0, (EDB, self.p))))
-        data = pickle.loads(conn.recv(4096))
-        # if(data == (1,)):
-        #     log.info("Setup completed")
-        conn.close()
+        super().Setup(l)
+        # self.p = 69445180235231407255137142482031499329548634082242122837872648805446522657159
+        # self.g = 65537
+
+        # random.seed(l)
+
+        # Kt = gen_key_F(random.getrandbits(256))
+        # Kx = gen_key_F(random.getrandbits(256))
+        # Ky = gen_key_F(random.getrandbits(256))
+        # Kz = gen_key_F(random.getrandbits(256))
+        
+        # UpdateCnt, Tset, XSet = dict(), dict(), dict()
+        # self.sk, self.st = (Kt, Kx, Ky, Kz), UpdateCnt
+        # EDB = (Tset, XSet)
+        # conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # conn.connect(self.addr)
+        # conn.send(pickle.dumps((0, (EDB, self.p))))
+        # data = pickle.loads(conn.recv(4096))
+        # # if(data == (1,)):
+        # #     log.info("Setup completed")
+        # conn.close()
 
         return
     
@@ -275,32 +271,55 @@ class suppODXTClient(ODXTClient):
         Kt, Kx, Ky, Kz = self.sk
         w1_uc = MAXINT
         w1 = ""
+        w2 = ""
         for x in q:
             if x in self.st and self.st[x] < w1_uc:
                 w1 = x
                 w1_uc = self.st[x]
+        m = math.ceil((w1_uc+1)/self.Ts) + random.random()
+        tokenLimit = math.ceil(m*self.Ts)
+        q_s = [x for x in q]
+        random.shuffle(q_s)
+        for x in q_s:
+            if x in self.st and self.st[x] >= tokenLimit:
+                w2 = x
+                break
+        # If w2 is not found in query, use dummy keyword
+        
         # stokenlist = []
         # xtokenlists = []
         sxTokenList = []
         if(w1 in self.st):
             for j in range(w1_uc):
-                saddr_j = prf_F(
-                    Kt, (str(w1)+str(j+1)+str(0)).encode())
+                saddr_j = prf_F(Kt, (str(w1)+str(j+1)+str(0)).encode())
                 # stokenlist.append(saddr_j)
                 xtl = []
-                B0 = prf_Fp(
-                    Kz, (str(w1)+str(j+1)).encode(), self.p, self.g)
-                B = int.from_bytes(B0, 'little')
+                B = int.from_bytes(prf_Fp(Kz, (str(w1)+str(j+1)).encode(), self.p, self.g))
                 for i in range(n):
                     if(q[i] != w1):
-                        A0 = prf_Fp(
-                            Kx, (str(q[i])).encode(), self.p, self.g)
-                        A = int.from_bytes(A0, 'little')
-                        xtoken = pow(self.g, A*B, self.p)
+                        A = int.from_bytes(prf_Fp(Kx, (str(q[i])).encode(), self.p, self.g))
+                        xtoken = pow(self.g, A*B, self.p).to_bytes(MAXBYTES)
                         xtl.append(xtoken)
                 random.shuffle(xtl)
                 # xtokenlists.append(xtl)
                 sxTokenList.append((saddr_j, xtl))
+
+        w1,w2 = w2,w1
+        if(w1 in self.st):
+            for j in range(w1_uc, tokenLimit):
+                saddr_j = prf_F(Kt, (str(w1)+str(j+1)+str(0)).encode())
+                # stokenlist.append(saddr_j)
+                xtl = []
+                B = int.from_bytes(prf_Fp(Kz, (str(w1)+str(j+1)).encode(), self.p, self.g))
+                for i in range(n):
+                    if(q[i] != w1):
+                        A = int.from_bytes(prf_Fp(Kx, (str(q[i])).encode(), self.p, self.g))
+                        xtoken = pow(self.g, A*B, self.p).to_bytes(MAXBYTES)
+                        xtl.append(xtoken)
+                random.shuffle(xtl)
+                # xtokenlists.append(xtl)
+                sxTokenList.append((saddr_j, xtl))
+        w1,w2 = w2,w1
         res, idx = shuffle_and_index(sxTokenList)
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(self.addr)
@@ -313,7 +332,7 @@ class suppODXTClient(ODXTClient):
         resp_tup = pickle.loads(conn.recv(4096))
         sEOpList = sort_by_order(resp_tup[0], idx)
         IdList = []
-        for j,l in enumerate(sEOpList):
+        for j,l in enumerate(sEOpList[:w1_uc]):
             sval, cnt = l
             X0 = prf_F(Kt, (str(w1)+str(j+1)+str(1)).encode())
             op_id = bytes_XOR(sval, X0)

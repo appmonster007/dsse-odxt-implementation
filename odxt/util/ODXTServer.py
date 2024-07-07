@@ -5,6 +5,9 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
+MAXBYTES = 64
+
+
 class serverReqHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, addr, server):
         super().__init__(request, addr, server)
@@ -51,9 +54,8 @@ class ODXTServer(socketserver.TCPServer):
             cnt = 1
             sval, alpha = TSet[token[0]]
             for xt in token[1]:
-                xtoken_ij = xt
-                xtag_ij = pow(xtoken_ij, alpha, self.p)
-                if(xtag_ij in XSet):
+                xtag = pow(int.from_bytes(xt), int.from_bytes(alpha), self.p).to_bytes(MAXBYTES)
+                if(xtag in XSet):
                     cnt += 1
             sEOpList.append((sval, cnt))
         return (sEOpList,)
@@ -78,11 +80,11 @@ class flexODXTServer(ODXTServer):
             sval, alpha = TSet[token[0]]
             a, a_c = alpha
             for xt in token[1]:
-                xtag_ij = pow(xt, a, self.p)
-                xtag_ij_c = pow(xt, a_c, self.p)
-                if(xtag_ij in XSet):
+                xtag = pow(int.from_bytes(xt), int.from_bytes(a), self.p).to_bytes(MAXBYTES)
+                xtag_c = pow(int.from_bytes(xt), int.from_bytes(a_c), self.p).to_bytes(MAXBYTES)
+                if(xtag in XSet):
                     cnt_i += 1
-                    if(xtag_ij_c in XSet and XSet[xtag_ij] < XSet[xtag_ij_c]):
+                    if(xtag_c in XSet and XSet[xtag] < XSet[xtag_c]):
                         cnt_j += 1
             sEOpList.append((sval, cnt_i, cnt_j))
         return (sEOpList,)

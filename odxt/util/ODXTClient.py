@@ -4,6 +4,7 @@ import random
 import sys
 import math
 import logging
+from datetime import datetime
 from .ODXTutil import *
 
 log = logging.getLogger(__name__)
@@ -276,7 +277,9 @@ class suppODXTClient(ODXTClient):
             if x in self.st and self.st[x] < w1_uc:
                 w1 = x
                 w1_uc = self.st[x]
-        m = math.ceil((w1_uc+1)/self.Ts) + random.random()
+        random.seed(datetime.now().timestamp())
+        y = 1
+        m = math.ceil((w1_uc+1)/self.Ts) + (random.random()*y)
         tokenLimit = math.ceil(m*self.Ts)
         q_s = [x for x in q]
         random.shuffle(q_s)
